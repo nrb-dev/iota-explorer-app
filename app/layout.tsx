@@ -32,7 +32,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 to-purple-200 dark:from-[#090909] dark:to-[#1a0b2e]">
+      <body className="relative w-full flex flex-col">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -42,7 +42,6 @@ export default function RootLayout({
           <Particles color="#b325d6" />
           <Navbar />
           {children}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-purple-200 to-transparent dark:from-[#1a0b2e] dark:to-transparent pointer-events-none"></div>
         </ThemeProvider>
       </body>
     </html>
