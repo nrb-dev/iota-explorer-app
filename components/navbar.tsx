@@ -53,7 +53,7 @@ export function Navbar() {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={<Button variant="outline" className="rounded-sm p-5" />}
-          className="border-0 !bg-background cursor-pointer"
+          className="border-0 bg-background! cursor-pointer"
         >
           <MenuIcon />
         </DropdownMenuTrigger>
