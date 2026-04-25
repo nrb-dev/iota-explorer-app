@@ -8,6 +8,21 @@ export type Validator = {
   city: string;
   lat: number;
   lng: number;
+  votingPower: number;
+  commissionRate: number;
+  stakingPoolIotaBalance: string;
+  nextEpochStake: string;
+  gasPrice: string;
+  rewardsPool: string;
+  iotaAddress: string;
+  apy: number | null;
+};
+
+export type ValidatorApiResponse = {
+  epoch: string;
+  totalStake: string;
+  referenceGasPrice: string;
+  validators: Validator[];
 };
 
 export type LabelDatum = {

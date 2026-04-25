@@ -20,11 +20,11 @@ import { ThemeToggle } from './theme-toggle';
 
 export function Navbar() {
   return (
-    <header className="bg-transparent absolute top-0 left-0 z-50 flex items-center justify-between w-full px-2 mt-4">
+    <header className="bg-transparent self-center absolute top-0 left-0 z-50 flex items-center justify-between w-full px-4 pt-4 max-w-7xl ">
       <Link href="/">
         <Image
           src="./logo.svg"
-          alt="Synthetify Logo"
+          alt="Website Logo"
           width={45}
           height={45}
           className="dark:invert"

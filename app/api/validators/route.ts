@@ -18,6 +18,13 @@ type ParsedNode = {
   imageUrl: string;
   projectUrl: string;
   host: string | null;
+  votingPower: number;
+  commissionRate: number;
+  stakingPoolIotaBalance: string;
+  nextEpochStake: string;
+  gasPrice: string;
+  rewardsPool: string;
+  iotaAddress: string;
 };
 
 type ParsedNodeWithHost = ParsedNode & { host: string };
@@ -32,6 +39,21 @@ type ValidatorResponse = {
   city: string;
   lat: number;
   lng: number;
+  votingPower: number;
+  commissionRate: number;
+  stakingPoolIotaBalance: string;
+  nextEpochStake: string;
+  gasPrice: string;
+  rewardsPool: string;
+  iotaAddress: string;
+  apy: number | null;
+};
+
+type ApiResponse = {
+  epoch: string;
+  totalStake: string;
+  referenceGasPrice: string;
+  validators: ValidatorResponse[];
 };
 
 /* ── Constants ── */
@@ -133,21 +155,51 @@ async function fetchGeoForIps(
   }
 }
 
-export async function GET() {
+async function fetchValidatorApys(): Promise<Map<string, number>> {
   try {
-    log('⏳ 1. Fetching IOTA system state...');
-
-    const iotaResponse = await fetch(IOTA_RPC_URL, {
+    const res = await fetch(IOTA_RPC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         jsonrpc: '2.0',
-        id: 1,
-        method: 'iotax_getLatestIotaSystemStateV2',
+        id: 2,
+        method: 'iotax_getValidatorsApy',
         params: [],
       }),
       cache: 'no-store',
     });
+    if (!res.ok) return new Map();
+    const data = await res.json();
+    const apys = data.result?.apys ?? [];
+    const map = new Map<string, number>();
+    for (const entry of apys) {
+      map.set(entry.address, entry.apy);
+    }
+    return map;
+  } catch (err) {
+    log('⚠️ Failed to fetch APYs:', err);
+    return new Map();
+  }
+}
+
+export async function GET() {
+  try {
+    log('⏳ 1. Fetching IOTA system state...');
+
+    const [iotaResponse, apyMap] = await Promise.all([
+      fetch(IOTA_RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'iotax_getLatestIotaSystemStateV2',
+          params: [],
+        }),
+        cache: 'no-store',
+      }),
+      fetchValidatorApys(),
+    ]);
 
     if (!iotaResponse.ok) {
       throw new Error(`IOTA RPC returned ${iotaResponse.status}`);
@@ -161,7 +213,14 @@ export async function GET() {
     }
 
     const activeValidators = systemState?.activeValidators ?? [];
-    if (activeValidators.length === 0) return NextResponse.json([]);
+    if (activeValidators.length === 0) {
+      return NextResponse.json({
+        epoch: systemState?.epoch ?? '0',
+        totalStake: systemState?.totalStake ?? '0',
+        referenceGasPrice: systemState?.referenceGasPrice ?? '0',
+        validators: [],
+      } satisfies ApiResponse);
+    }
 
     /* Parse + extract hosts, identify which need fresh geo data. */
     const parsedNodes: ParsedNodeWithHost[] = [];
@@ -177,6 +236,13 @@ export async function GET() {
         imageUrl: val.imageUrl,
         projectUrl: val.projectUrl,
         host,
+        votingPower: Number(val.votingPower) || 0,
+        commissionRate: Number(val.commissionRate) || 0,
+        stakingPoolIotaBalance: val.stakingPoolIotaBalance || '0',
+        nextEpochStake: val.nextEpochStake || '0',
+        gasPrice: val.gasPrice || '0',
+        rewardsPool: val.rewardsPool || '0',
+        iotaAddress: val.iotaAddress || '',
       });
 
       const cached = geoCache.get(host);
@@ -217,11 +283,24 @@ export async function GET() {
         city: geo.city,
         lat: geo.lat,
         lng: geo.lng,
+        votingPower: node.votingPower,
+        commissionRate: node.commissionRate,
+        stakingPoolIotaBalance: node.stakingPoolIotaBalance,
+        nextEpochStake: node.nextEpochStake,
+        gasPrice: node.gasPrice,
+        rewardsPool: node.rewardsPool,
+        iotaAddress: node.iotaAddress,
+        apy: apyMap.get(node.iotaAddress) ?? null,
       });
     }
 
     log(`🚀 4. Returning ${finalNodes.length} validators.`);
-    return NextResponse.json(finalNodes);
+    return NextResponse.json({
+      epoch: systemState?.epoch ?? '0',
+      totalStake: systemState?.totalStake ?? '0',
+      referenceGasPrice: systemState?.referenceGasPrice ?? '0',
+      validators: finalNodes,
+    } satisfies ApiResponse);
   } catch (error) {
     console.error('Validator API error:', error);
     return NextResponse.json(

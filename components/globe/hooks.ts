@@ -1,13 +1,18 @@
+'use client';
+
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { GlobeMethods } from 'react-globe.gl';
 import type { Light, MeshPhongMaterial, Object3D, PointsMaterial } from 'three';
-import type { Validator, ZoomBand } from './types';
+import type { Validator, ValidatorApiResponse, ZoomBand } from './types';
 
 const POLL_INTERVAL_MS = 60_000;
 
 /* ── Fetch + poll validators with visibility-aware pause ── */
 export function useValidators() {
   const [validators, setValidators] = useState<Validator[]>([]);
+  const [epoch, setEpoch] = useState('0');
+  const [totalStake, setTotalStake] = useState('0');
+  const [referenceGasPrice, setReferenceGasPrice] = useState('0');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -19,9 +24,12 @@ export function useValidators() {
       try {
         const res = await fetch('/api/validators');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: Validator[] = await res.json();
+        const data: ValidatorApiResponse = await res.json();
         if (mounted) {
-          setValidators(data);
+          setValidators(data.validators);
+          setEpoch(data.epoch);
+          setTotalStake(data.totalStake);
+          setReferenceGasPrice(data.referenceGasPrice);
           setError(null);
           setIsLoading(false);
         }
@@ -66,7 +74,7 @@ export function useValidators() {
     };
   }, []);
 
-  return { validators, isLoading, error };
+  return { validators, epoch, totalStake, referenceGasPrice, isLoading, error };
 }
 
 /* ── ResizeObserver wrapper ── */

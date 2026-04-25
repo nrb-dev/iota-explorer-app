@@ -5,6 +5,7 @@ import './globals.css';
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Particles } from '@/components/particles-background';
+import { Footer } from '@/components/footer';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,7 +33,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="relative w-full flex flex-col">
+      <body className="relative w-full flex flex-col ">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -42,6 +43,7 @@ export default function RootLayout({
           <Particles color="#b325d6" />
           <Navbar />
           {children}
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

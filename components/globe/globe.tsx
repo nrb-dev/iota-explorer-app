@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import type { GlobeMethods } from 'react-globe.gl';
 import { cn } from '@/lib/utils';
-import type { LabelDatum } from './types';
+import type { LabelDatum, Validator } from './types';
 import { groupByRegion, groupByCountry } from './grouping';
 import { createRegionLabel, createCountryLabel } from './labels';
 import {
@@ -25,7 +25,7 @@ const GlobeGl = dynamic(() => import('react-globe.gl'), {
   ),
 });
 
-const MAX_GLOBE_HEIGHT = 600;
+const MAX_GLOBE_HEIGHT = 800;
 const CLOSE_ENTER_ALTITUDE = 1.4;
 const CLOSE_LEAVE_ALTITUDE = 1.6;
 
@@ -33,14 +33,28 @@ const getLat = (d: LabelDatum) => d.lat;
 const getLng = (d: LabelDatum) => d.lng;
 const getElement = (d: LabelDatum) => d.element;
 
-export function Globe({ className }: { className?: string }) {
+type GlobeProps = {
+  className?: string;
+  validators?: Validator[];
+  isLoading?: boolean;
+};
+
+export function Globe({
+  className,
+  validators: propValidators,
+  isLoading: propIsLoading,
+}: GlobeProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevElementsRef = useRef<HTMLElement[]>([]);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  const { validators, isLoading, error } = useValidators();
+  // Use props if provided, otherwise fall back to internal fetching
+  const internal = useValidators();
+  const validators = propValidators ?? internal.validators;
+  const isLoading = propIsLoading ?? internal.isLoading;
+  const error = internal.error;
   const dimensions = useResponsiveDimensions(containerRef, MAX_GLOBE_HEIGHT);
   const { band: zoomBand, onZoom } = useZoomBand(
     CLOSE_ENTER_ALTITUDE,
