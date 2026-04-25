@@ -20,7 +20,7 @@ import { ThemeToggle } from './theme-toggle';
 
 export function Navbar() {
   return (
-    <header className="bg-transparent self-center absolute top-0 left-0 z-50 flex items-center justify-between w-full px-4 pt-4 max-w-7xl ">
+    <header className="bg-transparent absolute top-0 left-0 right-0 z-50 mx-auto flex items-center justify-between w-full px-4 pt-4 max-w-7xl ">
       <Link href="/">
         <Image
           src="./logo.svg"

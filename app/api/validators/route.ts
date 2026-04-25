@@ -57,11 +57,11 @@ type ApiResponse = {
 };
 
 /* ── Constants ── */
+
 const GEO_TTL_MS = 24 * 60 * 60 * 1000; // 24h — IPs rarely move geographically
 const MAX_HOSTS_PER_BATCH = 100; // ip-api batch limit
-const IOTA_RPC_URL = 'https://indexer.mainnet.iota.cafe/';
-const IP_API_URL =
-  'http://ip-api.com/batch?fields=status,message,query,lat,lon,continent,country,city';
+const IOTA_URL = process.env.IOTA_URL || '';
+const IP_API_URL = process.env.IP_API_URL || '';
 
 const NETADDRESS_REGEX = /\/(ip4|dns|dns4)\/([^/]+)\//;
 
@@ -157,7 +157,7 @@ async function fetchGeoForIps(
 
 async function fetchValidatorApys(): Promise<Map<string, number>> {
   try {
-    const res = await fetch(IOTA_RPC_URL, {
+    const res = await fetch(IOTA_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -187,7 +187,7 @@ export async function GET() {
     log('⏳ 1. Fetching IOTA system state...');
 
     const [iotaResponse, apyMap] = await Promise.all([
-      fetch(IOTA_RPC_URL, {
+      fetch(IOTA_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
