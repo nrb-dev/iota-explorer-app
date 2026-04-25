@@ -80,6 +80,7 @@ export const Particles: React.FC<ParticlesProps> = ({
   const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const animationRef = useRef<number | null>(null);
+  const pausedRef = useRef(false);
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
 
   useEffect(() => {
@@ -90,8 +91,26 @@ export const Particles: React.FC<ParticlesProps> = ({
     animate();
     window.addEventListener('resize', initCanvas);
 
+    // Pause animation when tab is hidden to save CPU/battery
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        pausedRef.current = true;
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
+      } else {
+        pausedRef.current = false;
+        if (!animationRef.current) {
+          animate();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     return () => {
       window.removeEventListener('resize', initCanvas);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -276,14 +295,16 @@ export const Particles: React.FC<ParticlesProps> = ({
         // update the circle position
       }
     });
-    animationRef.current = window.requestAnimationFrame(animate);
+    if (!pausedRef.current) {
+      animationRef.current = window.requestAnimationFrame(animate);
+    }
   };
 
   return (
     <div
       ref={canvasContainerRef}
       className={cn(
-        'fixed inset-0 overflow-hidden bg-gradient-to-b from-slate-50 to-purple-200 dark:from-[#090909] dark:to-[#1a0b2e]',
+        'fixed inset-0 overflow-hidden bg-linear-to-b from-slate-50 to-purple-200 dark:from-[#090909] dark:to-[#1a0b2e]',
         className
       )}
     >
@@ -298,7 +319,3 @@ export const Particles: React.FC<ParticlesProps> = ({
 };
 
 Particles.displayName = 'Particles';
-
-export default function ParticlesDemo() {
-  return <Particles />;
-}

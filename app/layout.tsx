@@ -4,7 +4,7 @@ import './globals.css';
 
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Particles } from '@/components/particlesBackground';
+import { Particles } from '@/components/particles-background';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

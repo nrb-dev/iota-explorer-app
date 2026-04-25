@@ -6,7 +6,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from '@/components/ui/navigation-menu';
-import { MenuIcon, MoveRight } from 'lucide-react';
+import { MenuIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +16,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { ThemeToggle } from './themeToggle';
+import { ThemeToggle } from './theme-toggle';
 
 export function Navbar() {
   return (
-    <header className="bg-transoarent absolute top-0 left-0 z-50 flex items-center justify-between w-full px-2 mt-4">
+    <header className="bg-transparent absolute top-0 left-0 z-50 flex items-center justify-between w-full px-2 mt-4">
       <Link href="/">
         <Image
           src="./logo.svg"
