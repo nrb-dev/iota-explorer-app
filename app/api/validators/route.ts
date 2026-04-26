@@ -56,12 +56,11 @@ type ApiResponse = {
   validators: ValidatorResponse[];
 };
 
-/* ── Constants ── */
-
-const GEO_TTL_MS = 24 * 60 * 60 * 1000; // 24h — IPs rarely move geographically
-const MAX_HOSTS_PER_BATCH = 100; // ip-api batch limit
-const IOTA_URL = process.env.IOTA_URL || '';
-const IP_API_URL = process.env.IP_API_URL || '';
+const GEO_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_HOSTS_PER_BATCH = 100;
+const IOTA_RPC_URL = process.env.IOTA_RPC_URL;
+const IP_API_URL = process.env.IP_API_URL || 'http://ip-api.com/batch';
+const IOTA_RPC_KEY = process.env.IOTA_RPC_KEY || '';
 
 const NETADDRESS_REGEX = /\/(ip4|dns|dns4)\/([^/]+)\//;
 
@@ -70,6 +69,11 @@ const geoCache = new Map<string, GeoEntry>();
 const isDev = process.env.NODE_ENV !== 'production';
 const log = (...args: unknown[]) => {
   if (isDev) console.log(...args);
+};
+
+const rpcHeaders: HeadersInit = {
+  'Content-Type': 'application/json',
+  ...(IOTA_RPC_KEY && { Authorization: `Bearer ${IOTA_RPC_KEY}` }),
 };
 
 function isCacheFresh(entry: GeoEntry): boolean {
@@ -82,13 +86,21 @@ function extractHost(netAddress: string | undefined): string | null {
   return match ? match[2] : null;
 }
 
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 async function resolveHostsToIps(
   hosts: string[]
 ): Promise<{ ips: string[]; ipToHost: Map<string, string> }> {
   const results = await Promise.allSettled(
     hosts.map(async (host) => {
-      const { address } = await dns.lookup(host);
-      return { host, address };
+      const addresses = await dns.resolve4(host);
+      return { host, address: addresses[0] };
     })
   );
 
@@ -96,10 +108,10 @@ async function resolveHostsToIps(
   const ipToHost = new Map<string, string>();
 
   for (const result of results) {
-    if (result.status === 'fulfilled') {
+    if (result.status === 'fulfilled' && result.value.address) {
       ips.push(result.value.address);
       ipToHost.set(result.value.address, result.value.host);
-    } else {
+    } else if (result.status === 'rejected') {
       log('⚠️ DNS lookup failed:', result.reason);
     }
   }
@@ -157,16 +169,20 @@ async function fetchGeoForIps(
 
 async function fetchValidatorApys(): Promise<Map<string, number>> {
   try {
-    const res = await fetch(IOTA_URL, {
+    if (!IOTA_RPC_URL) {
+      log('❌ IOTA_RPC_URL is not configured');
+      return new Map();
+    }
+    const res = await fetch(IOTA_RPC_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: rpcHeaders,
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: 2,
         method: 'iotax_getValidatorsApy',
         params: [],
       }),
-      cache: 'no-store',
+      next: { revalidate: 60 },
     });
     if (!res.ok) return new Map();
     const data = await res.json();
@@ -184,19 +200,26 @@ async function fetchValidatorApys(): Promise<Map<string, number>> {
 
 export async function GET() {
   try {
+    if (!IOTA_RPC_URL) {
+      return NextResponse.json(
+        { error: 'IOTA_RPC_URL is not configured' },
+        { status: 500 }
+      );
+    }
+
     log('⏳ 1. Fetching IOTA system state...');
 
     const [iotaResponse, apyMap] = await Promise.all([
-      fetch(IOTA_URL, {
+      fetch(IOTA_RPC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: rpcHeaders,
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           method: 'iotax_getLatestIotaSystemStateV2',
           params: [],
         }),
-        cache: 'no-store',
+        next: { revalidate: 60 },
       }),
       fetchValidatorApys(),
     ]);
@@ -222,7 +245,6 @@ export async function GET() {
       } satisfies ApiResponse);
     }
 
-    /* Parse + extract hosts, identify which need fresh geo data. */
     const parsedNodes: ParsedNodeWithHost[] = [];
     const hostsNeedingFetch = new Set<string>();
 
@@ -251,23 +273,22 @@ export async function GET() {
       }
     }
 
-    /* Resolve DNS + geo only for stale/missing hosts, parallelized. */
-    const missingHosts = Array.from(hostsNeedingFetch).slice(
-      0,
-      MAX_HOSTS_PER_BATCH
-    );
+    const missingHosts = Array.from(hostsNeedingFetch);
 
     if (missingHosts.length > 0) {
-      log(`🌍 2. Resolving ${missingHosts.length} hostnames in parallel...`);
-      const { ips, ipToHost } = await resolveHostsToIps(missingHosts);
+      log(`🌍 2. Resolving ${missingHosts.length} hostnames...`);
 
-      if (ips.length > 0) {
-        log(`📡 3. Geolocating ${ips.length} IPs...`);
-        await fetchGeoForIps(ips, ipToHost);
+      const hostChunks = chunkArray(missingHosts, MAX_HOSTS_PER_BATCH);
+
+      for (const chunk of hostChunks) {
+        const { ips, ipToHost } = await resolveHostsToIps(chunk);
+        if (ips.length > 0) {
+          log(`📡 3. Geolocating chunk of ${ips.length} IPs...`);
+          await fetchGeoForIps(ips, ipToHost);
+        }
       }
     }
 
-    /* Build final response from cache. */
     const finalNodes: ValidatorResponse[] = [];
     for (const node of parsedNodes) {
       const geo = geoCache.get(node.host);
