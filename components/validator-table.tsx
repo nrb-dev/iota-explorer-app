@@ -33,7 +33,7 @@ import {
   formatVotingPower,
 } from '@/lib/formatters';
 import { ValidatorAvatar } from '@/components/validators/validator-avatar';
-import { StatCard } from '@/components/validators/stat-card';
+import { MetricCard } from '@/components/metric-card';
 import { TableSkeleton } from '@/components/validators/table-skeleton';
 import { TablePagination } from '@/components/validators/table-pagination';
 import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
@@ -345,23 +345,27 @@ export function ValidatorTable({
     >
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
-        <StatCard
+        <MetricCard
+          variant="stat"
           icon={Users}
           label="Active Validators"
           value={String(validators.length)}
           sub={`Epoch #${epoch}`}
         />
-        <StatCard
+        <MetricCard
+          variant="stat"
           icon={Coins}
           label="Total Staked"
           value={`${formatIota(totalStake)} IOTA`}
         />
-        <StatCard
+        <MetricCard
+          variant="stat"
           icon={TrendingUp}
           label="Average APY"
           value={avgApy != null ? formatApy(avgApy) : '—'}
         />
-        <StatCard
+        <MetricCard
+          variant="stat"
           icon={Globe2}
           label="Countries"
           value={String(uniqueCountries)}

@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowLeft, Clock3, Database, Hash, Layers, User } from 'lucide-react';
+import { Clock3, Database, Hash, Layers, User } from 'lucide-react';
 
 import { CopyAddressButton } from '@/components/validators/copy-address-button';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -24,7 +22,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatAddress } from '@/lib/formatters';
 import { getTransactionDetail, parseIotaNetwork } from '@/lib/iota';
-import InfoCard from '@/components/info-card';
+import { MetricCard } from '@/components/metric-card';
+import { PageBackButton } from '@/components/page-back-button';
+import { PageShell } from '@/components/page-shell';
+import { KeyValueRow } from '@/components/key-value-row';
 
 type Props = {
   params: Promise<{ digest: string }>;
@@ -89,18 +90,8 @@ export default async function TransactionDetailPage({
 
   if (!tx) {
     return (
-      <main className="min-h-screen pt-28">
-        <section className="mx-auto w-full max-w-7xl px-4 pb-20">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-4"
-            nativeButton={false}
-            render={<Link href={`/?network=${network}`} />}
-          >
-            <ArrowLeft className="size-4" />
-            Home
-          </Button>
+      <PageShell>
+        <PageBackButton href={`/?network=${network}`} label="Home" className="mb-4" />
           <Card className="border-border/50 bg-card/70">
             <CardHeader>
               <CardTitle>Transaction not found</CardTitle>
@@ -109,24 +100,13 @@ export default async function TransactionDetailPage({
               </CardDescription>
             </CardHeader>
           </Card>
-        </section>
-      </main>
+      </PageShell>
     );
   }
 
   return (
-    <main className="min-h-screen pt-28">
-      <section className="mx-auto w-full max-w-7xl px-4 pb-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4"
-          nativeButton={false}
-          render={<Link href={`/?network=${network}`} />}
-        >
-          <ArrowLeft className="size-4" />
-          Home
-        </Button>
+    <PageShell>
+      <PageBackButton href={`/?network=${network}`} label="Home" className="mb-4" />
 
         <Card className="border-border/50 bg-card/70 backdrop-blur-sm">
           <CardContent className="flex flex-col gap-4 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -148,7 +128,7 @@ export default async function TransactionDetailPage({
         </Card>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <InfoCard
+          <MetricCard
             label="Sender"
             value={
               tx.sender ? formatAddress(tx.sender, 8) : 'IOTA System Account'
@@ -156,17 +136,17 @@ export default async function TransactionDetailPage({
             sub={tx.sender ? <CopyAddressButton address={tx.sender} /> : ''}
             icon={User}
           />
-          <InfoCard
+          <MetricCard
             label="Checkpoint"
             value={tx.checkpoint ?? '—'}
             icon={Hash}
           />
-          <InfoCard
+          <MetricCard
             label="Epoch"
             value={`${tx.epoch ?? '—'}`}
             icon={Database}
           />
-          <InfoCard
+          <MetricCard
             label="Date"
             value={formatDate(tx.timestampMs)}
             sub={network}
@@ -190,33 +170,29 @@ export default async function TransactionDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-start justify-between gap-4 py-3 text-sm">
-                  <span className="text-muted-foreground">Digest</span>
-                  <span className="max-w-[70%] truncate text-right font-mono">
-                    {tx.digest}
-                  </span>
-                </div>
+                <KeyValueRow
+                  label="Digest"
+                  value={tx.digest}
+                  valueClassName="max-w-[70%]"
+                />
                 <Separator />
-                <div className="flex items-start justify-between gap-4 py-3 text-sm">
-                  <span className="text-muted-foreground">Kind</span>
-                  <span className="max-w-[70%] truncate text-right font-mono">
-                    {tx.kind ?? '—'}
-                  </span>
-                </div>
+                <KeyValueRow
+                  label="Kind"
+                  value={tx.kind ?? '—'}
+                  valueClassName="max-w-[70%]"
+                />
                 <Separator />
-                <div className="flex items-start justify-between gap-4 py-3 text-sm">
-                  <span className="text-muted-foreground">Gas price</span>
-                  <span className="max-w-[70%] truncate text-right font-mono">
-                    {tx.gasPrice ?? '—'}
-                  </span>
-                </div>
+                <KeyValueRow
+                  label="Gas price"
+                  value={tx.gasPrice ?? '—'}
+                  valueClassName="max-w-[70%]"
+                />
                 <Separator />
-                <div className="flex items-start justify-between gap-4 py-3 text-sm">
-                  <span className="text-muted-foreground">Events</span>
-                  <span className="max-w-[70%] truncate text-right font-mono">
-                    {tx.eventsCount}
-                  </span>
-                </div>
+                <KeyValueRow
+                  label="Events"
+                  value={tx.eventsCount}
+                  valueClassName="max-w-[70%]"
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -313,7 +289,6 @@ export default async function TransactionDetailPage({
             </Card>
           </TabsContent>
         </Tabs>
-      </section>
-    </main>
+    </PageShell>
   );
 }

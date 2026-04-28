@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import type { ComponentType } from 'react';
 import { notFound } from 'next/navigation';
 import {
   Activity,
   AlertTriangle,
-  ArrowLeft,
   BadgeCheck,
   Coins,
   Database,
@@ -40,7 +38,10 @@ import {
   formatIota,
   formatVotingPower,
 } from '@/lib/formatters';
-import InfoCard from '@/components/info-card';
+import { MetricCard } from '@/components/metric-card';
+import { PageBackButton } from '@/components/page-back-button';
+import { PageShell } from '@/components/page-shell';
+import { KeyValueRow } from '@/components/key-value-row';
 
 export const revalidate = 60;
 
@@ -83,15 +84,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: validator.imageUrl ? [validator.imageUrl] : undefined,
     },
   };
-}
-
-function MetadataRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="max-w-[65%] truncate text-right font-mono">{value}</span>
-    </div>
-  );
 }
 
 function InfoTile({
@@ -204,18 +196,12 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
       : `${validator.city ? `${validator.city}, ` : ''}${validator.country}`;
 
   return (
-    <main className="min-h-screen pt-28">
-      <section className="mx-auto w-full max-w-7xl px-4 pb-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4"
-          nativeButton={false}
-          render={<Link href={`/validators?network=${data.network}`} />}
-        >
-          <ArrowLeft className="size-4" />
-          Validators
-        </Button>
+    <PageShell>
+      <PageBackButton
+        href={`/validators?network=${data.network}`}
+        label="Validators"
+        className="mb-4"
+      />
 
         <Card className="border-border/50 bg-card/70 backdrop-blur-sm">
           <CardContent className="flex flex-col gap-4 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -262,29 +248,29 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
         </Card>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <InfoCard
+          <MetricCard
             icon={Wallet}
             label="Stake"
             value={`${formatIota(validator.stakingPoolIotaBalance)} IOTA`}
             sub={`${stakeShare.toFixed(2)}% of active stake`}
           />
-          <InfoCard
+          <MetricCard
             icon={ShieldCheck}
             label="Voting Power"
             value={formatVotingPower(validator.votingPower, totalVotingPower)}
             sub={formatCompactNumber(validator.votingPower)}
           />
-          <InfoCard
+          <MetricCard
             icon={TrendingUp}
             label="APY"
             value={formatApy(validator.apy)}
           />
-          <InfoCard
+          <MetricCard
             icon={Gauge}
             label="Commission"
             value={formatCommission(validator.commissionRate)}
           />
-          <InfoCard
+          <MetricCard
             icon={Activity}
             label="Operational signals"
             value={`${signalScore}/${operationalSignals.length}`}
@@ -350,36 +336,36 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MetadataRow
+                  <KeyValueRow
                     label="Epoch"
                     value={`${data.network} #${data.epoch || '0'}`}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Address"
                     value={formatAddress(validator.iotaAddress, 10)}
                   />
                   <Separator />
-                  <MetadataRow label="Region" value={validator.region} />
+                  <KeyValueRow label="Region" value={validator.region} />
                   <Separator />
-                  <MetadataRow label="Country" value={validator.country} />
+                  <KeyValueRow label="Country" value={validator.country} />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Network"
                     value={validator.netAddress || '—'}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Next epoch stake"
                     value={`${formatIota(validator.nextEpochStake)} IOTA`}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Rewards pool"
                     value={`${formatIota(validator.rewardsPool)} IOTA`}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Reference gas"
                     value={data.referenceGasPrice || validator.gasPrice || '—'}
                   />
@@ -556,7 +542,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MetadataRow
+                  <KeyValueRow
                     label="Staking pool id"
                     value={
                       validator.stakingPoolId
@@ -565,7 +551,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                     }
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Operation cap"
                     value={
                       validator.operationCapId
@@ -574,12 +560,12 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                     }
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Activation epoch"
                     value={validator.stakingPoolActivationEpoch ?? '—'}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Protocol pubkey"
                     value={
                       validator.protocolPubkey
@@ -588,7 +574,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                     }
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Network pubkey"
                     value={
                       validator.networkPubkey
@@ -597,7 +583,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                     }
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Worker pubkey"
                     value={
                       validator.workerPubkey
@@ -606,7 +592,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                     }
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Proof of possession"
                     value={
                       validator.proofOfPossession
@@ -645,27 +631,27 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MetadataRow
+                  <KeyValueRow
                     label="Validator net"
                     value={validator.netAddress || '—'}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="P2P"
                     value={validator.p2pAddress || '—'}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Primary"
                     value={validator.primaryAddress || '—'}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Worker"
                     value={validator.workerAddress || '—'}
                   />
                   <Separator />
-                  <MetadataRow
+                  <KeyValueRow
                     label="Geo"
                     value={
                       hasGeo
@@ -686,7 +672,6 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
             Wallet integration coming soon
           </Button>
         </div>
-      </section>
-    </main>
+    </PageShell>
   );
 }
