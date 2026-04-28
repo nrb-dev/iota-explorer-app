@@ -21,81 +21,85 @@ import { NetworkControls } from './network-controls';
 
 export function Navbar() {
   return (
-    <header className="bg-transparent absolute top-0 left-0 right-0 z-50 mx-auto flex items-center justify-between w-full px-4 pt-4 max-w-7xl ">
-      <Link href="/" className="flex items-center gap-2">
-        <Image
-          src="/logo.svg"
-          alt="Website Logo"
-          width={45}
-          height={45}
-          priority
-          className="h-auto dark:invert"
-        />
-        <span>IOTA Explorer</span>
-      </Link>
+    <header className="fixed top-0 left-0 right-0 p-4 z-50 border-b border-border/40 bg-linear-to-b from-background/50 via-background/70 to-background/10 backdrop-blur-md supports-backdrop-filter:bg-linear-to-b">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between xl:px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo.svg"
+            alt="Website Logo"
+            width={45}
+            height={45}
+            priority
+            className="h-auto dark:invert"
+          />
+          <span>IOTA Explorer</span>
+        </Link>
 
-      <NavigationMenu className="bg-background rounded-sm p-1 hidden sm:flex">
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuLink render={<Link href="/">Home</Link>} />
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink
-              render={<Link href="/validators">Validators</Link>}
-            />
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink render={<Link href="/charts">Charts</Link>} />
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink render={<Link href="/staking">Staking</Link>} />
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
+        <NavigationMenu className="bg-background rounded-sm p-1 hidden sm:flex">
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuLink render={<Link href="/">Home</Link>} />
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                render={<Link href="/validators">Validators</Link>}
+              />
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink render={<Link href="/charts">Charts</Link>} />
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                render={<Link href="/staking">Staking</Link>}
+              />
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="outline" className="rounded-sm p-5" />}
-          className="border-0 bg-background! cursor-pointer"
-        >
-          <MenuIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-44 min-w-44">
-          <DropdownMenuGroup className="sm:hidden">
-            <DropdownMenuItem>
-              <Link href="/" className="flex items-center gap-2">
-                Home
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link href="/validators" className="flex items-center gap-2">
-                Validators
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link href="/charts" className="flex items-center gap-2">
-                Charts
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link href="/staking" className="flex items-center gap-2">
-                Staking
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator className="flex sm:hidden" />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="outline" className="rounded-sm p-5" />}
+            className="border-0 bg-background! cursor-pointer"
+          >
+            <MenuIcon />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-44 min-w-44">
+            <DropdownMenuGroup className="sm:hidden">
+              <DropdownMenuItem>
+                <Link href="/" className="flex items-center gap-2">
+                  Home
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/validators" className="flex items-center gap-2">
+                  Validators
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/charts" className="flex items-center gap-2">
+                  Charts
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/staking" className="flex items-center gap-2">
+                  Staking
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator className="flex sm:hidden" />
 
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <ThemeToggle />
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <ThemeToggle />
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
 
-          <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
 
-          <NetworkControls />
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <NetworkControls />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }
