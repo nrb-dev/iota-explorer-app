@@ -2,20 +2,14 @@
 
 import { Globe } from '@/components/globe';
 import { useValidators } from '@/components/globe';
-import { ValidatorTable } from '@/components/validator-table';
+import { HomeInsights } from '@/components/home/home-insights';
 
 export default function Home() {
-  const { validators, epoch, totalStake, isLoading } = useValidators();
+  const { validators, isLoading } = useValidators();
   return (
     <main className="relative">
       <Globe validators={validators} isLoading={isLoading} />
-      <ValidatorTable
-        validators={validators}
-        epoch={epoch}
-        totalStake={totalStake}
-        isLoading={isLoading}
-        className="-top-20"
-      />
+      <HomeInsights className="-top-20" />
     </main>
   );
 }

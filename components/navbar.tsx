@@ -22,7 +22,7 @@ import { NetworkControls } from './network-controls';
 export function Navbar() {
   return (
     <header className="bg-transparent absolute top-0 left-0 right-0 z-50 mx-auto flex items-center justify-between w-full px-4 pt-4 max-w-7xl ">
-      <Link href="/">
+      <Link href="/" className="flex items-center gap-2">
         <Image
           src="/logo.svg"
           alt="Website Logo"
@@ -31,6 +31,7 @@ export function Navbar() {
           priority
           className="h-auto dark:invert"
         />
+        <span>IOTA Explorer</span>
       </Link>
 
       <NavigationMenu className="bg-background rounded-sm p-1 hidden sm:flex">

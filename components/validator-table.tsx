@@ -101,7 +101,10 @@ function GroupValidatorsGrid({
           className="flex min-w-0 items-center gap-3 rounded-lg border bg-background/60 p-3 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => onOpenValidator(validator.iotaAddress)}
         >
-          <ValidatorAvatar name={validator.name} imageUrl={validator.imageUrl} />
+          <ValidatorAvatar
+            name={validator.name}
+            imageUrl={validator.imageUrl}
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{validator.name}</p>
             <p className="truncate text-xs text-muted-foreground">
@@ -298,19 +301,6 @@ export function ValidatorTable({
     GROUP_PAGE_SIZE
   );
 
-  const nakamotoCoefficient = useMemo(() => {
-    if (totalVotingPower <= 0) return null;
-    const sorted = [...validators].sort(
-      (a, b) => b.votingPower - a.votingPower
-    );
-    let cumulative = 0;
-    for (let i = 0; i < sorted.length; i++) {
-      cumulative += sorted[i].votingPower;
-      if (cumulative / totalVotingPower > 1 / 3) return i + 1;
-    }
-    return null;
-  }, [totalVotingPower, validators]);
-
   const openValidator = (address: string) => {
     if (!address) return;
     router.push(
@@ -377,20 +367,6 @@ export function ValidatorTable({
           value={String(uniqueCountries)}
         />
       </div>
-
-      <Card className="mb-6 border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardContent className="flex flex-col gap-2 py-1 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium">Voting power concentration</p>
-            <p className="text-xs text-muted-foreground">
-              Nakamoto coefficient for a &gt;33% validator set share.
-            </p>
-          </div>
-          <Badge variant="secondary" className="w-fit font-mono text-xs">
-            {nakamotoCoefficient ?? '—'} validators
-          </Badge>
-        </CardContent>
-      </Card>
 
       {/* ── Tabs ── */}
       <Tabs defaultValue="validators" className="w-full">

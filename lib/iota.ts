@@ -71,13 +71,117 @@ export type EpochData = {
   epochDurationMs: string | null;
 };
 
+export type NetworkMetrics = {
+  currentTps: number | null;
+  tps30Days: number | null;
+  totalPackages: string | null;
+  totalAddresses: string | null;
+  totalObjects: string | null;
+  currentEpoch: string | null;
+  currentCheckpoint: string | null;
+};
+
+export type AddressMetrics = {
+  cumulativeAddresses: number;
+  cumulativeActiveAddresses: number;
+  dailyActiveAddresses: number;
+};
+
+export type AddressMetricsPoint = AddressMetrics & {
+  epoch: number;
+  timestampMs: number;
+  checkpoint: number;
+};
+
+export type RecentCheckpoint = {
+  sequenceNumber: string;
+  digest: string | null;
+  timestampMs: string;
+  networkTotalTransactions: string;
+  transactionCount: number;
+};
+
 export type NetworkData = {
   network: IotaNetwork;
-  metrics: unknown | null;
-  circulatingSupply: unknown | null;
-  totalSupply: unknown | null;
+  metrics: NetworkMetrics;
+  circulatingSupply: string | null;
+  totalSupply: string | null;
   referenceGasPrice: string;
   latestCheckpoint: string | null;
+  recentCheckpoints: RecentCheckpoint[];
+  addressMetrics: AddressMetrics | null;
+  addressSeries: AddressMetricsPoint[];
+  epochStartTimestampMs: string | null;
+  epochDurationMs: string | null;
+};
+
+export type EpochSummary = {
+  epoch: string;
+  firstCheckpointId: string;
+  lastCheckpointId: string | null;
+  epochStartTimestampMs: string;
+  epochEndTimestampMs: string | null;
+  epochTotalTransactions: string;
+  totalGasFees: string | null;
+  totalStakeRewardsDistributed: string | null;
+  storageCharge: string | null;
+  storageRebate: string | null;
+  referenceGasPrice: string | null;
+};
+
+export type TransactionSummary = {
+  digest: string;
+  sender: string | null;
+  timestampMs: string | null;
+  checkpoint: string | null;
+  txCount: number | null;
+  gasUsed: string | null;
+  status: string | null;
+  kind: string | null;
+};
+
+export type ObjectChangeSummary = {
+  type: string;
+  objectId: string;
+  objectType: string | null;
+  owner: string | null;
+  version: string | null;
+  previousVersion: string | null;
+  digest: string | null;
+};
+
+export type BalanceChangeSummary = {
+  owner: string;
+  coinType: string;
+  amount: string;
+};
+
+export type TransactionDetail = {
+  digest: string;
+  status: string | null;
+  kind: string | null;
+  sender: string | null;
+  checkpoint: string | null;
+  epoch: string | null;
+  timestampMs: string | null;
+  gasUsed: string | null;
+  gasPrice: string | null;
+  gasBudget: string | null;
+  objectChanges: ObjectChangeSummary[];
+  balanceChanges: BalanceChangeSummary[];
+  eventsCount: number;
+};
+
+type CheckpointSummary = {
+  sequenceNumber?: string;
+  digest?: string;
+  timestampMs?: string;
+  networkTotalTransactions?: string;
+  transactions?: string[];
+};
+
+type CheckpointPage = {
+  data?: CheckpointSummary[];
 };
 
 type GeoEntry = {
@@ -136,6 +240,7 @@ const ALLOW_INSECURE_GEO_HTTP =
   process.env.IP_API_ALLOW_INSECURE_HTTP === 'true';
 
 const NETADDRESS_REGEX = /\/(ip4|dns|dns4)\/([^/]+)\//;
+const IOTA_COIN_TYPE = '0x2::iota::IOTA';
 
 const isDev = process.env.NODE_ENV !== 'production';
 const log = (...args: unknown[]) => {
@@ -275,6 +380,8 @@ type SystemStateResult = {
 
 type SystemStateShape = {
   epoch?: string;
+  epochStartTimestampMs?: string;
+  epochDurationMs?: string;
   totalStake?: string;
   referenceGasPrice?: string;
   activeValidators?: RawValidator[];
@@ -291,6 +398,20 @@ async function fetchSystemState(
   if (!result) return null;
   // V2 wrapper varies between RPC providers.
   return result.V2 ?? result;
+}
+
+async function fetchTotalSupply(network: IotaNetwork): Promise<unknown | null> {
+  // Most providers require a coin type parameter for this method.
+  const withCoinType = await rpcCall<unknown>(
+    network,
+    'iotax_getTotalSupply',
+    [IOTA_COIN_TYPE],
+    300
+  );
+  if (withCoinType != null) return withCoinType;
+
+  // Compatibility fallback for providers that still accept no params.
+  return rpcCall<unknown>(network, 'iotax_getTotalSupply', [], 300);
 }
 
 /* ── Geo enrichment ── */
@@ -533,6 +654,7 @@ export async function getValidatorByAddress(
 export async function getEpochData(
   network: IotaNetwork = 'mainnet'
 ): Promise<EpochData> {
+  const systemState = await fetchSystemState(network);
   const currentEpoch = await rpcCall<Record<string, unknown> | string | number>(
     network,
     'iotax_getCurrentEpoch',
@@ -564,8 +686,17 @@ export async function getEpochData(
     return {
       network,
       epoch: String(currentEpoch),
-      epochStartTimestampMs: null,
-      epochDurationMs: null,
+      epochStartTimestampMs: systemState?.epochStartTimestampMs ?? null,
+      epochDurationMs: systemState?.epochDurationMs ?? null,
+    };
+  }
+
+  if (systemState) {
+    return {
+      network,
+      epoch: systemState.epoch ?? '0',
+      epochStartTimestampMs: systemState.epochStartTimestampMs ?? null,
+      epochDurationMs: systemState.epochDurationMs ?? null,
     };
   }
 
@@ -578,19 +709,70 @@ export async function getEpochData(
   };
 }
 
+type RawNetworkMetrics = {
+  currentTps?: number | string;
+  tps30Days?: number | string;
+  totalPackages?: string;
+  totalAddresses?: string;
+  totalObjects?: string;
+  currentEpoch?: string;
+  currentCheckpoint?: string;
+};
+
+type RawSupply = { value?: string | number };
+
+function extractSupplyValue(raw: unknown): string | null {
+  if (raw == null) return null;
+  if (typeof raw === 'string' || typeof raw === 'number') return String(raw);
+  if (typeof raw === 'object') {
+    const v = (raw as RawSupply).value;
+    return v != null ? String(v) : null;
+  }
+  return null;
+}
+
 export async function getNetworkData(
   network: IotaNetwork = 'mainnet'
 ): Promise<NetworkData> {
+  const fetchCheckpoints = async (): Promise<RecentCheckpoint[]> => {
+    const checkpointsPage = await rpcCall<CheckpointPage>(
+      network,
+      'iota_getCheckpoints',
+      [null, 30, true],
+      60
+    );
+    return (checkpointsPage?.data ?? [])
+      .filter(
+        (row) =>
+          row.sequenceNumber != null &&
+          row.timestampMs != null &&
+          row.networkTotalTransactions != null
+      )
+      .map((row) => ({
+        sequenceNumber: row.sequenceNumber!,
+        digest: row.digest ?? null,
+        timestampMs: row.timestampMs!,
+        networkTotalTransactions: row.networkTotalTransactions!,
+        transactionCount: Array.isArray(row.transactions)
+          ? row.transactions.length
+          : 0,
+      }));
+  };
+
   const [
-    metrics,
-    circulatingSupply,
-    totalSupply,
+    rawMetrics,
+    recentCheckpoints,
+    circulatingSupplyRaw,
+    totalSupplyRaw,
     referenceGasPrice,
     latestCheckpoint,
+    addressSeriesRaw,
+    systemState,
   ] = await Promise.all([
-    rpcCall<unknown>(network, 'iotax_getNetworkMetrics', [], 60),
+    rpcCall<RawNetworkMetrics>(network, 'iotax_getNetworkMetrics', [], 60),
+    fetchCheckpoints(),
     rpcCall<unknown>(network, 'iotax_getCirculatingSupply', [], 300),
-    rpcCall<unknown>(network, 'iotax_getTotalSupply', [], 300),
+    fetchTotalSupply(network),
     rpcCall<string | number>(network, 'iotax_getReferenceGasPrice', [], 60),
     rpcCall<string | number>(
       network,
@@ -598,18 +780,222 @@ export async function getNetworkData(
       [],
       60
     ),
+    rpcCall<AddressMetricsPoint[]>(
+      network,
+      'iotax_getAllEpochAddressMetrics',
+      [],
+      300
+    ),
+    fetchSystemState(network),
   ]);
+
+  const metrics: NetworkMetrics = {
+    currentTps:
+      rawMetrics?.currentTps != null ? Number(rawMetrics.currentTps) : null,
+    tps30Days:
+      rawMetrics?.tps30Days != null ? Number(rawMetrics.tps30Days) : null,
+    totalPackages: rawMetrics?.totalPackages ?? null,
+    totalAddresses: rawMetrics?.totalAddresses ?? null,
+    totalObjects: rawMetrics?.totalObjects ?? null,
+    currentEpoch: rawMetrics?.currentEpoch ?? null,
+    currentCheckpoint: rawMetrics?.currentCheckpoint ?? null,
+  };
+
+  const addressSeries = (addressSeriesRaw ?? []).slice(-30);
+  const last = addressSeries[addressSeries.length - 1] ?? null;
+  const addressMetrics: AddressMetrics | null = last
+    ? {
+        cumulativeAddresses: last.cumulativeAddresses,
+        cumulativeActiveAddresses: last.cumulativeActiveAddresses,
+        dailyActiveAddresses: last.dailyActiveAddresses,
+      }
+    : null;
 
   return {
     network,
     metrics,
-    circulatingSupply,
-    totalSupply,
+    circulatingSupply: extractSupplyValue(circulatingSupplyRaw),
+    totalSupply: extractSupplyValue(totalSupplyRaw),
     referenceGasPrice:
       referenceGasPrice != null ? String(referenceGasPrice) : '0',
     latestCheckpoint:
-      latestCheckpoint != null ? String(latestCheckpoint) : null,
+      latestCheckpoint != null
+        ? String(latestCheckpoint)
+        : (metrics.currentCheckpoint ?? null),
+    recentCheckpoints,
+    addressMetrics,
+    addressSeries,
+    epochStartTimestampMs: systemState?.epochStartTimestampMs ?? null,
+    epochDurationMs: systemState?.epochDurationMs ?? null,
   };
+}
+
+type RawEpoch = {
+  epoch: string;
+  firstCheckpointId: string;
+  epochStartTimestamp: string;
+  epochTotalTransactions: string;
+  referenceGasPrice?: string;
+  endOfEpochInfo: null | {
+    lastCheckpointId: string;
+    epochEndTimestamp: string;
+    totalGasFees: string;
+    totalStakeRewardsDistributed: string;
+    storageCharge: string;
+    storageRebate: string;
+  };
+};
+
+export async function getEpochs(
+  network: IotaNetwork = 'mainnet',
+  limit = 30
+): Promise<EpochSummary[]> {
+  const result = await rpcCall<{ data: RawEpoch[] }>(
+    network,
+    'iotax_getEpochs',
+    [null, limit, true],
+    300
+  );
+  if (!result?.data) return [];
+  return result.data.map((row) => ({
+    epoch: row.epoch,
+    firstCheckpointId: row.firstCheckpointId,
+    lastCheckpointId: row.endOfEpochInfo?.lastCheckpointId ?? null,
+    epochStartTimestampMs: row.epochStartTimestamp,
+    epochEndTimestampMs: row.endOfEpochInfo?.epochEndTimestamp ?? null,
+    epochTotalTransactions: row.epochTotalTransactions,
+    totalGasFees: row.endOfEpochInfo?.totalGasFees ?? null,
+    totalStakeRewardsDistributed:
+      row.endOfEpochInfo?.totalStakeRewardsDistributed ?? null,
+    storageCharge: row.endOfEpochInfo?.storageCharge ?? null,
+    storageRebate: row.endOfEpochInfo?.storageRebate ?? null,
+    referenceGasPrice: row.referenceGasPrice ?? null,
+  }));
+}
+
+type RawObjectChange = {
+  type?: string;
+  objectId?: string;
+  objectType?: string;
+  owner?:
+    | string
+    | { AddressOwner?: string; ObjectOwner?: string; Shared?: unknown };
+  version?: string;
+  previousVersion?: string;
+  digest?: string;
+};
+
+type RawBalanceChange = {
+  owner?:
+    | string
+    | { AddressOwner?: string; ObjectOwner?: string; Shared?: unknown };
+  coinType?: string;
+  amount?: string;
+};
+
+type RawTransaction = {
+  digest: string;
+  timestampMs?: string;
+  checkpoint?: string;
+  transaction?: {
+    data?: {
+      sender?: string;
+      gasData?: {
+        price?: string;
+        budget?: string;
+      };
+      transaction?: {
+        kind?: string;
+        epoch?: string;
+        transactions?: unknown[];
+      };
+    };
+  };
+  effects?: {
+    status?: { status?: string; error?: string };
+    executedEpoch?: string;
+    gasUsed?: {
+      computationCost?: string;
+      storageCost?: string;
+      storageRebate?: string;
+      nonRefundableStorageFee?: string;
+    };
+    transactionDigest?: string;
+  };
+  objectChanges?: RawObjectChange[];
+  balanceChanges?: RawBalanceChange[];
+  events?: unknown[];
+};
+
+function ownerLabel(
+  owner: RawObjectChange['owner'] | RawBalanceChange['owner']
+): string | null {
+  if (owner == null) return null;
+  if (typeof owner === 'string') return owner;
+  if (owner.AddressOwner) return owner.AddressOwner;
+  if (owner.ObjectOwner) return owner.ObjectOwner;
+  if (owner.Shared !== undefined) return 'Shared';
+  return null;
+}
+
+function totalGas(
+  gas?: RawTransaction['effects'] extends { gasUsed?: infer G } ? G : undefined
+): string | null {
+  if (!gas || typeof gas !== 'object') return null;
+  const g = gas as {
+    computationCost?: string;
+    storageCost?: string;
+    storageRebate?: string;
+  };
+  try {
+    return (
+      BigInt(g.computationCost ?? '0') +
+      BigInt(g.storageCost ?? '0') -
+      BigInt(g.storageRebate ?? '0')
+    ).toString();
+  } catch {
+    return null;
+  }
+}
+
+export async function getRecentTransactions(
+  network: IotaNetwork = 'mainnet',
+  limit = 25
+): Promise<TransactionSummary[]> {
+  const result = await rpcCall<{ data: RawTransaction[] }>(
+    network,
+    'iotax_queryTransactionBlocks',
+    [{ options: { showInput: true, showEffects: true } }, null, limit, true],
+    0
+  );
+  if (!result?.data) return [];
+  return result.data.map((tx) => {
+    const gas = tx.effects?.gasUsed;
+    const totalGas =
+      gas != null
+        ? (
+            BigInt(gas.computationCost ?? '0') +
+            BigInt(gas.storageCost ?? '0') -
+            BigInt(gas.storageRebate ?? '0')
+          ).toString()
+        : null;
+    const inner = tx.transaction?.data?.transaction;
+    const txCount =
+      inner?.kind === 'ProgrammableTransaction' &&
+      Array.isArray(inner.transactions)
+        ? inner.transactions.length
+        : null;
+    return {
+      digest: tx.digest,
+      sender: tx.transaction?.data?.sender ?? null,
+      timestampMs: tx.timestampMs ?? null,
+      checkpoint: tx.checkpoint ?? null,
+      txCount,
+      gasUsed: totalGas,
+      status: tx.effects?.status?.status ?? null,
+      kind: inner?.kind ?? null,
+    };
+  });
 }
 
 export async function getRpcLatency(
