@@ -87,7 +87,9 @@ export const Particles: React.FC<ParticlesProps> = ({
     if (canvasRef.current) {
       context.current = canvasRef.current.getContext('2d');
     }
+    // eslint-disable-next-line react-hooks/immutability
     initCanvas();
+    // eslint-disable-next-line react-hooks/immutability
     animate();
     window.addEventListener('resize', initCanvas);
 
@@ -115,14 +117,18 @@ export const Particles: React.FC<ParticlesProps> = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [color]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
     onMouseMove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mousePosition.x, mousePosition.y]);
 
   useEffect(() => {
     initCanvas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
 
   const initCanvas = () => {

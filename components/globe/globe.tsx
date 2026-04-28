@@ -1,11 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import type { GlobeMethods } from 'react-globe.gl';
 import { cn } from '@/lib/utils';
 import type { LabelDatum, Validator } from './types';
+import { hasGeo } from './types';
 import { groupByRegion, groupByCountry } from './grouping';
 import { createRegionLabel, createCountryLabel } from './labels';
 import {
@@ -32,6 +34,19 @@ const CLOSE_LEAVE_ALTITUDE = 1.6;
 const getLat = (d: LabelDatum) => d.lat;
 const getLng = (d: LabelDatum) => d.lng;
 const getElement = (d: LabelDatum) => d.element;
+
+function canUseWebgl(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(
+      canvas.getContext('webgl2') ||
+        canvas.getContext('webgl') ||
+        canvas.getContext('experimental-webgl')
+    );
+  } catch {
+    return false;
+  }
+}
 
 type GlobeProps = {
   className?: string;
@@ -62,36 +77,45 @@ export function Globe({
   );
 
   const [globeReady, setGlobeReady] = useState(false);
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
   const onGlobeReady = useCallback(() => setGlobeReady(true), []);
 
   useGlobeScene(globeRef, globeReady, isDark);
 
+  useEffect(() => {
+    // WebGL must be detected after mount; keep the 3D renderer unmounted until then.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWebglAvailable(canUseWebgl());
+  }, []);
+
   /* ── Build label datasets only when validator set actually changes ──
      The key gates rebuild work; polling returning identical data is a no-op. */
-  const validatorsKey = useValidatorsKey(validators);
+  const geoValidators = useMemo(() => validators.filter(hasGeo), [validators]);
+  const validatorsKey = useValidatorsKey(geoValidators);
 
   const [regionData, setRegionData] = useState<LabelDatum[]>([]);
   const [countryData, setCountryData] = useState<LabelDatum[]>([]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     // Clean up old DOM nodes to prevent memory leaks
     prevElementsRef.current.forEach((el) => el.remove());
     prevElementsRef.current = [];
 
-    if (validators.length === 0) {
+    if (geoValidators.length === 0) {
       setRegionData([]);
       setCountryData([]);
       return;
     }
 
-    const newRegion = groupByRegion(validators).map((g) => ({
+    const newRegion = groupByRegion(geoValidators).map((g) => ({
       id: `region-${g.region}`,
       lat: g.lat,
       lng: g.lng,
       element: createRegionLabel(g),
     }));
 
-    const newCountry = groupByCountry(validators).map((g) => ({
+    const newCountry = groupByCountry(geoValidators).map((g) => ({
       id: `country-${g.country}`,
       lat: g.lat,
       lng: g.lng,
@@ -114,6 +138,7 @@ export function Globe({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validatorsKey]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const activeData = useMemo(
     () => (zoomBand === 'close' ? countryData : regionData),
@@ -223,7 +248,24 @@ export function Globe({
           </div>
         )}
 
-        {dimensions.width > 0 && (
+        {webglAvailable === false && (
+          <div className="relative flex min-h-[500px] w-full items-center justify-center overflow-hidden">
+            <Image
+              src={isDark ? '/globeDark.png' : '/globeLight.png'}
+              alt="IOTA validator globe"
+              width={900}
+              height={900}
+              priority
+              className="h-auto w-full max-w-[720px] opacity-80"
+            />
+            <div className="absolute bottom-16 left-1/2 max-w-sm -translate-x-1/2 rounded-lg border bg-background/80 px-4 py-3 text-center text-sm text-muted-foreground backdrop-blur">
+              3D globe is unavailable because WebGL is disabled in this
+              browser. Validator data is still available below.
+            </div>
+          </div>
+        )}
+
+        {dimensions.width > 0 && webglAvailable === true && (
           <GlobeGl
             ref={globeRef}
             onGlobeReady={onGlobeReady}
@@ -231,7 +273,7 @@ export function Globe({
             width={dimensions.width}
             height={dimensions.height}
             backgroundColor="rgba(0,0,0,0)"
-            globeImageUrl={isDark ? './globeDark.png' : './globeLight.png'}
+            globeImageUrl={isDark ? '/globeDark.png' : '/globeLight.png'}
             htmlElementsData={activeData}
             htmlLat={getLat as (d: object) => number}
             htmlLng={getLng as (d: object) => number}

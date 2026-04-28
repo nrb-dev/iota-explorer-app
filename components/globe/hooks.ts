@@ -1,80 +1,60 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import useSWR from 'swr';
 import type { GlobeMethods } from 'react-globe.gl';
 import type { Light, MeshPhongMaterial, Object3D, PointsMaterial } from 'three';
-import type { Validator, ValidatorApiResponse, ZoomBand } from './types';
+import type {
+  GeoValidator,
+  Validator,
+  ValidatorApiResponse,
+  ZoomBand,
+} from './types';
+import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
 
-const POLL_INTERVAL_MS = 60_000;
+/**
+ * Validator data is per-epoch (~24h on IOTA), so a 5-minute refresh is
+ * already overkill but keeps the dashboard feeling alive without hammering
+ * the upstream RPC. SWR also revalidates on focus and reconnect.
+ */
+const REFRESH_INTERVAL_MS = 5 * 60_000;
 
-/* ── Fetch + poll validators with visibility-aware pause ── */
+const EMPTY: Validator[] = [];
+
+const fetcher = async (url: string): Promise<ValidatorApiResponse> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.json();
+};
+
+/* ── Fetch + auto-refresh validators ── */
 export function useValidators() {
-  const [validators, setValidators] = useState<Validator[]>([]);
-  const [epoch, setEpoch] = useState('0');
-  const [totalStake, setTotalStake] = useState('0');
-  const [referenceGasPrice, setReferenceGasPrice] = useState('0');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const network = useNetworkStore((state) => state.network);
+  const { data, error, isLoading } = useSWR<ValidatorApiResponse, Error>(
+    withNetworkParam('/api/validators', network),
+    fetcher,
+    {
+      refreshInterval: REFRESH_INTERVAL_MS,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      // Treat 429 as transient — back off rather than dropping the data.
+      shouldRetryOnError: (err) => !err.message.includes('429'),
+      errorRetryInterval: 30_000,
+      keepPreviousData: true,
+    }
+  );
 
-  useEffect(() => {
-    let mounted = true;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const fetchValidators = async () => {
-      try {
-        const res = await fetch('/api/validators');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: ValidatorApiResponse = await res.json();
-        if (mounted) {
-          setValidators(data.validators);
-          setEpoch(data.epoch);
-          setTotalStake(data.totalStake);
-          setReferenceGasPrice(data.referenceGasPrice);
-          setError(null);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.error('Failed to fetch validators:', err);
-        if (mounted) {
-          setError(err instanceof Error ? err : new Error('Unknown error'));
-          setIsLoading(false);
-        }
-      }
-    };
-
-    const startPolling = () => {
-      if (intervalId !== null) return;
-      intervalId = setInterval(fetchValidators, POLL_INTERVAL_MS);
-    };
-
-    const stopPolling = () => {
-      if (intervalId !== null) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchValidators(); // refresh immediately on focus
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    };
-
-    fetchValidators();
-    startPolling();
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    return () => {
-      mounted = false;
-      stopPolling();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, []);
-
-  return { validators, epoch, totalStake, referenceGasPrice, isLoading, error };
+  return {
+    network: data?.network ?? network,
+    validators: data?.validators ?? EMPTY,
+    epoch: data?.epoch ?? '0',
+    totalStake: data?.totalStake ?? '0',
+    referenceGasPrice: data?.referenceGasPrice ?? '0',
+    isLoading: isLoading && !data,
+    error: error ?? null,
+  };
 }
 
 /* ── ResizeObserver wrapper ── */
@@ -133,7 +113,7 @@ export function useZoomBand(
 
 /* ── Stable validator key for dependency tracking ──
    Avoids rebuilding labels when polling returns identical data. */
-export function useValidatorsKey(validators: Validator[]): string {
+export function useValidatorsKey(validators: GeoValidator[]): string {
   return useMemo(
     () =>
       validators

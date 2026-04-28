@@ -1,4 +1,4 @@
-import type { Validator, RegionGroup, CountryGroup } from './types';
+import type { GeoValidator, RegionGroup, CountryGroup } from './types';
 
 const MAX_DROPDOWN_ROWS = 20;
 
@@ -196,7 +196,10 @@ function createPulsingDot(): HTMLElement {
 }
 
 /* ── Validator row (with avatar fallback) ── */
-function createValidatorRow(v: Validator, showCountry: boolean): HTMLElement {
+function createValidatorRow(
+  v: GeoValidator,
+  showCountry: boolean
+): HTMLElement {
   const row = document.createElement('div');
   applyStyle(row, styles.row);
 

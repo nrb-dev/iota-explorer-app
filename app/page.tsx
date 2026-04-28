@@ -14,6 +14,7 @@ export default function Home() {
         epoch={epoch}
         totalStake={totalStake}
         isLoading={isLoading}
+        className="-top-20"
       />
     </main>
   );

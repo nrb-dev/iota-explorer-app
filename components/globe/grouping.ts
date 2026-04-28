@@ -1,4 +1,4 @@
-import type { Validator, RegionGroup, CountryGroup } from './types';
+import type { GeoValidator, RegionGroup, CountryGroup } from './types';
 
 /* ── Spherical centroid ── */
 export function computeCentroid(points: Array<{ lat: number; lng: number }>): {
@@ -29,10 +29,10 @@ export function computeCentroid(points: Array<{ lat: number; lng: number }>): {
 
 /* ── Generic groupBy ── */
 function groupBy<K extends string>(
-  validators: Validator[],
-  keyFn: (v: Validator) => K
-): Map<K, Validator[]> {
-  const map = new Map<K, Validator[]>();
+  validators: GeoValidator[],
+  keyFn: (v: GeoValidator) => K
+): Map<K, GeoValidator[]> {
+  const map = new Map<K, GeoValidator[]>();
   for (const v of validators) {
     const key = keyFn(v);
     const list = map.get(key) ?? [];
@@ -42,7 +42,7 @@ function groupBy<K extends string>(
   return map;
 }
 
-export function groupByRegion(validators: Validator[]): RegionGroup[] {
+export function groupByRegion(validators: GeoValidator[]): RegionGroup[] {
   const grouped = groupBy(validators, (v) => v.region);
   return Array.from(grouped.entries()).map(([region, list]) => {
     const { lat, lng } = computeCentroid(list);
@@ -51,7 +51,7 @@ export function groupByRegion(validators: Validator[]): RegionGroup[] {
   });
 }
 
-export function groupByCountry(validators: Validator[]): CountryGroup[] {
+export function groupByCountry(validators: GeoValidator[]): CountryGroup[] {
   const grouped = groupBy(validators, (v) => v.country);
   return Array.from(grouped.entries()).map(([country, list]) => {
     const { lat, lng } = computeCentroid(list);

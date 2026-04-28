@@ -16,15 +16,16 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## IOTA geo enrichment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Validator geolocation is optional and runs server-side from validator network
+addresses. The public `ip-api.com` free batch endpoint does not support HTTPS,
+so use it only when you explicitly accept plaintext requests for public
+validator infrastructure IPs:
 
-## Learn More
+```bash
+IP_API_URL=http://ip-api.com/batch?fields=status,message,query,lat,lon,continent,country,city
+IP_API_ALLOW_INSECURE_HTTP=true
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For production, prefer an HTTPS provider or the paid ip-api pro endpoint.

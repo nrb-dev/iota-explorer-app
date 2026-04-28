@@ -17,17 +17,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { ThemeToggle } from './theme-toggle';
+import { NetworkControls } from './network-controls';
 
 export function Navbar() {
   return (
     <header className="bg-transparent absolute top-0 left-0 right-0 z-50 mx-auto flex items-center justify-between w-full px-4 pt-4 max-w-7xl ">
       <Link href="/">
         <Image
-          src="./logo.svg"
+          src="/logo.svg"
           alt="Website Logo"
           width={45}
           height={45}
-          className="dark:invert"
+          priority
+          className="h-auto dark:invert"
         />
       </Link>
 
@@ -57,7 +59,7 @@ export function Navbar() {
         >
           <MenuIcon />
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent className="w-44 min-w-44">
           <DropdownMenuGroup className="sm:hidden">
             <DropdownMenuItem>
               <Link href="/" className="flex items-center gap-2">
@@ -90,9 +92,7 @@ export function Navbar() {
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuGroup>
-            <DropdownMenuItem>Latency: 50ms</DropdownMenuItem>
-          </DropdownMenuGroup>
+          <NetworkControls />
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
