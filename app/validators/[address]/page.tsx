@@ -40,6 +40,7 @@ import {
   formatIota,
   formatVotingPower,
 } from '@/lib/formatters';
+import InfoCard from '@/components/info-card';
 
 export const revalidate = 60;
 
@@ -82,35 +83,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: validator.imageUrl ? [validator.imageUrl] : undefined,
     },
   };
-}
-
-function DetailStat({
-  icon: Icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  sub?: string;
-}) {
-  return (
-    <Card className="border-border/50 bg-card/70">
-      <CardContent className="flex items-start gap-3 py-1">
-        <div className="rounded-lg bg-primary/10 p-2 text-primary">
-          <Icon className="size-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 truncate font-mono text-lg font-semibold">
-            {value}
-          </p>
-          {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 function MetadataRow({ label, value }: { label: string; value: string }) {
@@ -290,29 +262,29 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
         </Card>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <DetailStat
+          <InfoCard
             icon={Wallet}
             label="Stake"
             value={`${formatIota(validator.stakingPoolIotaBalance)} IOTA`}
             sub={`${stakeShare.toFixed(2)}% of active stake`}
           />
-          <DetailStat
+          <InfoCard
             icon={ShieldCheck}
             label="Voting Power"
             value={formatVotingPower(validator.votingPower, totalVotingPower)}
             sub={formatCompactNumber(validator.votingPower)}
           />
-          <DetailStat
+          <InfoCard
             icon={TrendingUp}
             label="APY"
             value={formatApy(validator.apy)}
           />
-          <DetailStat
+          <InfoCard
             icon={Gauge}
             label="Commission"
             value={formatCommission(validator.commissionRate)}
           />
-          <DetailStat
+          <InfoCard
             icon={Activity}
             label="Operational signals"
             value={`${signalScore}/${operationalSignals.length}`}

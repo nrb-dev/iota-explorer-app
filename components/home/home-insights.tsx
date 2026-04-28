@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { Pause, Play } from 'lucide-react';
 import {
@@ -223,6 +224,7 @@ function MetricBlock({
 }
 
 export function HomeInsights({ className }: { className?: string }) {
+  const router = useRouter();
   const network = useNetworkStore((state) => state.network);
   const [paused, setPaused] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -593,7 +595,29 @@ export function HomeInsights({ className }: { className?: string }) {
                     txRows.map((tx, i) => (
                       <TableRow
                         key={tx.digest}
-                        className="group hover:bg-muted/40"
+                        className="group cursor-pointer hover:bg-muted/40"
+                        onClick={() =>
+                          router.push(
+                            withNetworkParam(
+                              `/transactions/${encodeURIComponent(tx.digest)}`,
+                              network
+                            )
+                          )
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            router.push(
+                              withNetworkParam(
+                                `/transactions/${encodeURIComponent(tx.digest)}`,
+                                network
+                              )
+                            );
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Open transaction ${tx.digest}`}
                       >
                         <TableCell className="text-center text-xs text-muted-foreground font-mono">
                           {i + 1}

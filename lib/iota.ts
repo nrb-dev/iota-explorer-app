@@ -939,19 +939,20 @@ function ownerLabel(
 }
 
 function totalGas(
-  gas?: RawTransaction['effects'] extends { gasUsed?: infer G } ? G : undefined
+  gas?:
+    | {
+        computationCost?: string;
+        storageCost?: string;
+        storageRebate?: string;
+      }
+    | undefined
 ): string | null {
   if (!gas || typeof gas !== 'object') return null;
-  const g = gas as {
-    computationCost?: string;
-    storageCost?: string;
-    storageRebate?: string;
-  };
   try {
     return (
-      BigInt(g.computationCost ?? '0') +
-      BigInt(g.storageCost ?? '0') -
-      BigInt(g.storageRebate ?? '0')
+      BigInt(gas.computationCost ?? '0') +
+      BigInt(gas.storageCost ?? '0') -
+      BigInt(gas.storageRebate ?? '0')
     ).toString();
   } catch {
     return null;
@@ -996,6 +997,62 @@ export async function getRecentTransactions(
       kind: inner?.kind ?? null,
     };
   });
+}
+
+export async function getTransactionDetail(
+  network: IotaNetwork,
+  digest: string
+): Promise<TransactionDetail | null> {
+  const tx = await rpcCall<RawTransaction | null>(
+    network,
+    'iota_getTransactionBlock',
+    [
+      digest,
+      {
+        showInput: true,
+        showEffects: true,
+        showObjectChanges: true,
+        showBalanceChanges: true,
+        showEvents: true,
+      },
+    ],
+    0
+  );
+
+  if (!tx) return null;
+
+  const inner = tx.transaction?.data?.transaction;
+  const status = tx.effects?.status?.status ?? null;
+  const objectChanges = (tx.objectChanges ?? []).map((change) => ({
+    type: change.type ?? 'unknown',
+    objectId: change.objectId ?? '—',
+    objectType: change.objectType ?? null,
+    owner: ownerLabel(change.owner),
+    version: change.version ?? null,
+    previousVersion: change.previousVersion ?? null,
+    digest: change.digest ?? null,
+  }));
+  const balanceChanges = (tx.balanceChanges ?? []).map((change) => ({
+    owner: ownerLabel(change.owner) ?? '—',
+    coinType: change.coinType ?? '—',
+    amount: change.amount ?? '0',
+  }));
+
+  return {
+    digest: tx.digest,
+    status,
+    kind: inner?.kind ?? null,
+    sender: tx.transaction?.data?.sender ?? null,
+    checkpoint: tx.checkpoint ?? null,
+    epoch: inner?.epoch ?? tx.effects?.executedEpoch ?? null,
+    timestampMs: tx.timestampMs ?? null,
+    gasUsed: totalGas(tx.effects?.gasUsed),
+    gasPrice: tx.transaction?.data?.gasData?.price ?? null,
+    gasBudget: tx.transaction?.data?.gasData?.budget ?? null,
+    objectChanges,
+    balanceChanges,
+    eventsCount: Array.isArray(tx.events) ? tx.events.length : 0,
+  };
 }
 
 export async function getRpcLatency(
