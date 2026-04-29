@@ -11,7 +11,13 @@ import {
 } from '@/components/ui/tooltip';
 import { formatAddress } from '@/lib/formatters';
 
-export function CopyAddressButton({ address }: { address: string }) {
+export function CopyAddressButton({
+  address,
+  showLabel = true,
+}: {
+  address: string;
+  showLabel?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
 
@@ -35,9 +41,12 @@ export function CopyAddressButton({ address }: { address: string }) {
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size={showLabel ? 'sm' : 'icon-xs'}
             className="max-w-full font-mono"
-            onClick={copy}
+            onClick={(event) => {
+              event.stopPropagation();
+              void copy();
+            }}
           />
         }
       >
@@ -46,7 +55,9 @@ export function CopyAddressButton({ address }: { address: string }) {
         ) : (
           <Copy className="size-3.5" />
         )}
-        <span className="truncate">{formatAddress(address, 8)}</span>
+        {showLabel && (
+          <span className="truncate">{formatAddress(address, 8)}</span>
+        )}
       </TooltipTrigger>
       <TooltipContent>
         {copyFailed ? 'Copy failed' : copied ? 'Copied' : 'Copy address'}
