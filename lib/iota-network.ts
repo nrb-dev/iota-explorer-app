@@ -18,6 +18,11 @@ export function parseIotaNetwork(
 }
 
 export function withNetworkParam(path: string, network: IotaNetwork): string {
-  const separator = path.includes('?') ? '&' : '?';
-  return `${path}${separator}network=${network}`;
+  const [pathAndQuery, hash] = path.split('#', 2);
+  const [pathname, query] = pathAndQuery.split('?', 2);
+  const params = new URLSearchParams(query);
+  params.set('network', network);
+  const search = params.toString();
+
+  return `${pathname}${search ? `?${search}` : ''}${hash ? `#${hash}` : ''}`;
 }

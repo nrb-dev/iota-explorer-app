@@ -1,27 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 import { useValidators } from '@/components/globe';
 import { Card, CardContent } from '@/components/ui/card';
 import { ValidatorTable } from '@/components/validator-table';
 import { useNetworkStore } from '@/lib/network-store';
-import { isIotaNetwork } from '@/lib/iota-network';
 
 export function ValidatorsPageClient() {
   const network = useNetworkStore((state) => state.network);
-  const setNetwork = useNetworkStore((state) => state.setNetwork);
   const { validators, epoch, totalStake, isLoading, error } = useValidators();
-
-  useEffect(() => {
-    const urlNetwork = new URLSearchParams(window.location.search).get(
-      'network'
-    );
-    if (isIotaNetwork(urlNetwork) && urlNetwork !== network) {
-      setNetwork(urlNetwork);
-    }
-  }, [network, setNetwork]);
 
   return (
     <main className="relative min-h-screen pt-28">

@@ -26,7 +26,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/logo.svg"
-            alt="Website Logo"
+            alt="IOTA Explorer logo"
             width={45}
             height={45}
             priority
@@ -58,7 +58,14 @@ export function Navbar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="outline" className="rounded-sm p-5" />}
+            render={
+              <Button
+                variant="outline"
+                size="icon-lg"
+                className="rounded-sm"
+                aria-label="Open navigation menu"
+              />
+            }
             className="border-0 bg-background! cursor-pointer"
           >
             <MenuIcon />

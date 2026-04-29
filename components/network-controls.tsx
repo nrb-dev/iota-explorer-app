@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { Gauge, RadioTower } from 'lucide-react';
 
@@ -16,6 +17,7 @@ import { jsonFetcher } from '@/lib/client-fetcher';
 import {
   IOTA_NETWORK_LABELS,
   IOTA_NETWORKS,
+  isIotaNetwork,
   type IotaNetwork,
 } from '@/lib/iota-network';
 import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
@@ -35,6 +37,8 @@ const rpcStatusFetcher = async (url: string): Promise<RpcStatus> => {
 };
 
 export function NetworkControls() {
+  const pathname = usePathname();
+  const router = useRouter();
   const network = useNetworkStore((state) => state.network);
   const latencyMs = useNetworkStore((state) => state.latencyMs);
   const setNetwork = useNetworkStore((state) => state.setNetwork);
@@ -62,13 +66,22 @@ export function NetworkControls() {
   const latencyLabel =
     latencyMs == null ? (isLoading ? '...' : 'n/a') : `${latencyMs}ms`;
 
+  const handleNetworkChange = (value: string) => {
+    if (!isIotaNetwork(value)) return;
+    setNetwork(value);
+    router.replace(
+      withNetworkParam(`${pathname}${window.location.search}`, value),
+      { scroll: false }
+    );
+  };
+
   return (
     <>
       <DropdownMenuGroup>
         <DropdownMenuLabel className="px-2">Network</DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={network}
-          onValueChange={(value) => setNetwork(value as IotaNetwork)}
+          onValueChange={handleNetworkChange}
         >
           {IOTA_NETWORKS.map((value) => (
             <DropdownMenuRadioItem

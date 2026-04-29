@@ -30,5 +30,13 @@ describe('IOTA network helpers', () => {
       withNetworkParam('/api/validators?page=2', 'testnet'),
       '/api/validators?page=2&network=testnet'
     );
+    assert.equal(
+      withNetworkParam('/validators?network=mainnet&page=2', 'testnet'),
+      '/validators?network=testnet&page=2'
+    );
+    assert.equal(
+      withNetworkParam('/charts?range=30#activity', 'mainnet'),
+      '/charts?range=30&network=mainnet#activity'
+    );
   });
 });

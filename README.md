@@ -23,19 +23,21 @@ Live updates are handled with SWR polling:
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and run the development server with Bun:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
 bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+Useful checks before submitting changes:
+
+```bash
+bun run lint
+bun run test
+bun run build
+```
 
 ## Environment variables
 
@@ -51,8 +53,8 @@ IOTA_RPC_KEY=optional-secret-key
 
 Validator geolocation is optional and runs server-side from validator network
 addresses. The public `ip-api.com` free batch endpoint does not support HTTPS,
-thats why I use HTTP which explicitly accept plaintext requests for public
-validator infrastructure IPs:
+so this project uses HTTP only when plaintext requests are explicitly enabled
+for public validator infrastructure IPs:
 
 ```bash
 IP_API_URL=http://ip-api.com/batch?fields=status,message,query,lat,lon,continent,country,city
