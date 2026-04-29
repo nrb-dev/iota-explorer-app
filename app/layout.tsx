@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Suspense } from 'react';
 import './globals.css';
 
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AppBackground } from '@/components/app-background';
 import { Footer } from '@/components/footer';
+import { NetworkUrlSync } from '@/components/network-url-sync';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -40,6 +42,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <Suspense fallback={null}>
+            <NetworkUrlSync />
+          </Suspense>
           <AppBackground />
           <Navbar />
           <div className="relative z-10 flex flex-1 flex-col">

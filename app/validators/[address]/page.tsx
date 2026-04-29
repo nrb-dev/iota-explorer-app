@@ -61,9 +61,13 @@ async function getPageData(address: string, networkParam?: string | string[]) {
   return { data, validator };
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: Props): Promise<Metadata> {
   const { address } = await params;
-  const { validator } = await getPageData(address);
+  const resolvedSearchParams = await searchParams;
+  const { validator } = await getPageData(address, resolvedSearchParams?.network);
 
   if (!validator) {
     return {
@@ -282,7 +286,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
           <TabsList className="bg-muted/50">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="events">Stake events</TabsTrigger>
+            <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-4">
@@ -495,8 +499,7 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                 <CardHeader>
                   <CardTitle>Performance snapshot</CardTitle>
                   <CardDescription>
-                    Current epoch baseline until the phase 4 snapshot indexer
-                    starts persisting history.
+                    Current epoch baseline from the active validator set.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -605,24 +608,8 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
             </div>
           </TabsContent>
 
-          <TabsContent value="events" className="mt-4">
-            <div className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-              <Card className="border-border/50 bg-card/70">
-                <CardHeader>
-                  <CardTitle>Stake events</CardTitle>
-                  <CardDescription>
-                    The table shell is ready for filtered `iotax_queryEvents`
-                    integration.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-lg border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-                    No indexed stake events available yet for{' '}
-                    {formatAddress(validator.iotaAddress)}.
-                  </div>
-                </CardContent>
-              </Card>
-
+          <TabsContent value="endpoints" className="mt-4">
+            <div className="grid gap-4 lg:grid-cols-[0.85fr_1fr]">
               <Card className="border-border/50 bg-card/70">
                 <CardHeader>
                   <CardTitle>Network endpoints</CardTitle>
@@ -663,15 +650,48 @@ export default async function ValidatorDetail({ params, searchParams }: Props) {
                   />
                 </CardContent>
               </Card>
+
+              <Card className="border-border/50 bg-card/70">
+                <CardHeader>
+                  <CardTitle>Public identity</CardTitle>
+                  <CardDescription>
+                    Validator addresses that are useful when comparing explorer
+                    and RPC views.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <KeyValueRow
+                    label="IOTA address"
+                    value={formatAddress(validator.iotaAddress, 10)}
+                  />
+                  <Separator />
+                  <KeyValueRow
+                    label="Staking pool"
+                    value={
+                      validator.stakingPoolId
+                        ? formatAddress(validator.stakingPoolId, 10)
+                        : '—'
+                    }
+                  />
+                  <Separator />
+                  <KeyValueRow
+                    label="Operation cap"
+                    value={
+                      validator.operationCapId
+                        ? formatAddress(validator.operationCapId, 10)
+                        : '—'
+                    }
+                  />
+                  <Separator />
+                  <KeyValueRow
+                    label="Activation epoch"
+                    value={validator.stakingPoolActivationEpoch ?? '—'}
+                  />
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
-
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 backdrop-blur sm:hidden">
-          <Button className="w-full" disabled>
-            Wallet integration coming soon
-          </Button>
-        </div>
     </PageShell>
   );
 }

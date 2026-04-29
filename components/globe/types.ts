@@ -19,6 +19,22 @@ export type LabelDatum = {
   element: HTMLElement;
 };
 
+export type ArcDatum = {
+  id: string;
+  label: string;
+  startLat: number;
+  startLng: number;
+  endLat: number;
+  endLng: number;
+  altitude: number;
+  stroke: number;
+  dashLength: number;
+  dashGap: number;
+  dashInitialGap: number;
+  dashAnimateTime: number;
+  color: (t: number) => string;
+};
+
 export type ZoomBand = 'far' | 'close';
 
 export type RegionGroup = {

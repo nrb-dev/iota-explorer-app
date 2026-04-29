@@ -15,18 +15,23 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" className="rounded-sm p-5 w-full" disabled />
+      <Button variant="ghost" className="h-8 w-full justify-start rounded-md px-2" disabled />
     );
   }
+
+  const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
   return (
     <Button
       variant="ghost"
-      className="rounded-sm p-5 w-full"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="h-8 w-full justify-start rounded-md px-2"
+      onClick={() => setTheme(nextTheme)}
     >
-      <SunMoonIcon className="h-[1.2rem] w-[1.2rem]" />
-      <span className="sr-only">Toggle theme</span>
+      <SunMoonIcon className="size-4" />
+      <span>Theme</span>
+      <span className="ml-auto text-xs text-muted-foreground">
+        {theme === 'dark' ? 'Dark' : 'Light'}
+      </span>
     </Button>
   );
 }

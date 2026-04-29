@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CopyAddressButton } from '@/components/validators/copy-address-button';
 import { jsonFetcher } from '@/lib/client-fetcher';
 import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
 import { formatAddress } from '@/lib/formatters';
@@ -44,7 +45,8 @@ const TransactionBlocksChart = dynamic(
 );
 
 const AddressesChart = dynamic(
-  () => import('@/components/home/home-charts').then((mod) => mod.AddressesChart),
+  () =>
+    import('@/components/home/home-charts').then((mod) => mod.AddressesChart),
   {
     ssr: false,
     loading: () => <ChartSkeleton className="h-[180px]" />,
@@ -145,6 +147,15 @@ function formatExactNumber(raw: string | number | null): string {
   const n = typeof raw === 'string' ? Number(raw) : raw;
   if (!Number.isFinite(n)) return String(raw);
   return new Intl.NumberFormat('en').format(n);
+}
+
+function formatDigestPreview(digest: string): string {
+  return digest.length > 10 ? `${digest.slice(0, 10)}...` : digest;
+}
+
+function formatSenderPreview(sender: string): string {
+  if (sender.length <= 14) return sender;
+  return `${sender.slice(0, 7)}...${sender.slice(-4)}`;
 }
 
 function formatTimeAgo(timestampMs: string | null, now: number): string {
@@ -606,8 +617,12 @@ export function HomeInsights({ className }: { className?: string }) {
                         <TableCell>
                           <div className="flex min-w-0 items-center gap-2">
                             <span className="truncate font-mono text-xs">
-                              {formatAddress(tx.digest, 6)}
+                              {formatDigestPreview(tx.digest)}
                             </span>
+                            <CopyAddressButton
+                              address={tx.digest}
+                              showLabel={false}
+                            />
                             {tx.status && tx.status !== 'success' && (
                               <Badge
                                 variant="destructive"
@@ -618,8 +633,27 @@ export function HomeInsights({ className }: { className?: string }) {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {tx.sender ? formatAddress(tx.sender, 6) : '—'}
+                        <TableCell>
+                          <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                            {tx.sender &&
+                            tx.sender !=
+                              '0x0000000000000000000000000000000000000000000000000000000000000000' ? (
+                              <span className="truncate font-mono">
+                                {formatSenderPreview(tx.sender)}
+                              </span>
+                            ) : (
+                              <>
+                                <span className="truncate">
+                                  IOTA System Account
+                                </span>
+                                <span className="font-mono">0x0</span>
+                              </>
+                            )}
+                            <CopyAddressButton
+                              address={tx.sender ?? '0x0'}
+                              showLabel={false}
+                            />
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm">
                           {tx.txCount != null ? tx.txCount : '—'}
