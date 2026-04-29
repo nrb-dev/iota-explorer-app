@@ -1,4 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IOTA validator globe
+
+This app is a small IOTA-focused version of a validator explorer inspired by
+gmonads. The main view shows a 3D globe with validator locations, plus live
+network and validator data in the dashboard below it.
+
+The validator list on `explorer.iota.org/validators` is rendered by the IOTA
+Explorer frontend. Instead of scraping that page, this project reads the same
+kind of network data from IOTA JSON-RPC on the server. That keeps the browser
+away from the RPC URL/key, makes the data easier to cache, and is simpler to
+explain and maintain.
+
+The client only calls local API routes like `/api/validators`. Those routes
+then call IOTA RPC from the server, add cache headers, and apply a small
+per-client rate limit.
+
+Live updates are handled with SWR polling:
+
+- validators refresh every 5 minutes, because the active validator set changes
+  slowly around epochs
+- network metrics refresh every 30 seconds
+- recent transactions refresh every few seconds when that section is visible
 
 ## Getting Started
 
@@ -16,11 +37,21 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Environment variables
+
+RPC values are intentionally server-only.
+
+```bash
+IOTA_RPC_URL=https://your-mainnet-rpc.example
+IOTA_TESTNET_RPC_URL=https://your-testnet-rpc.example
+IOTA_RPC_KEY=optional-secret-key
+```
+
 ## IOTA geo enrichment
 
 Validator geolocation is optional and runs server-side from validator network
 addresses. The public `ip-api.com` free batch endpoint does not support HTTPS,
-so use it only when you explicitly accept plaintext requests for public
+thats why I use HTTP which explicitly accept plaintext requests for public
 validator infrastructure IPs:
 
 ```bash

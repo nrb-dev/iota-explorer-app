@@ -2,6 +2,7 @@ import 'server-only';
 
 import dns from 'dns/promises';
 
+import { extractHost } from '@/lib/iota/net-address';
 import { log } from '@/lib/iota/rpc-client';
 
 const GEO_TTL_MS = 24 * 60 * 60 * 1000;
@@ -9,7 +10,6 @@ const MAX_HOSTS_PER_BATCH = 100;
 const IP_API_URL = process.env.IP_API_URL;
 const ALLOW_INSECURE_GEO_HTTP =
   process.env.IP_API_ALLOW_INSECURE_HTTP === 'true';
-const NETADDRESS_REGEX = /\/(ip4|dns|dns4)\/([^/]+)\//;
 
 export type GeoEntry = {
   lat: number;
@@ -21,12 +21,7 @@ export type GeoEntry = {
 };
 
 const geoCache = new Map<string, GeoEntry>();
-
-export function extractHost(netAddress: string | undefined): string | null {
-  if (!netAddress) return null;
-  const match = netAddress.match(NETADDRESS_REGEX);
-  return match ? match[2] : null;
-}
+export { extractHost };
 
 function isCacheFresh(entry: GeoEntry): boolean {
   return Date.now() - entry.cachedAt < GEO_TTL_MS;

@@ -1,14 +1,10 @@
 import 'server-only';
 
 import type { IotaNetwork } from '@/lib/iota-network';
+import { getRpcKey, getRpcUrl } from '@/lib/iota/rpc-config';
 
 const RPC_TIMEOUT_MS = 10_000;
 export const IOTA_COIN_TYPE = '0x2::iota::IOTA';
-
-const DEFAULT_RPC_URLS = {
-  mainnet: 'https://api.mainnet.iota.cafe',
-  testnet: 'https://api.testnet.iota.cafe',
-} satisfies Record<IotaNetwork, string>;
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -28,31 +24,6 @@ export type SystemStateShape = {
 type SystemStateResult = {
   V2?: SystemStateShape;
 } & SystemStateShape;
-
-export function getRpcUrl(network: IotaNetwork): string {
-  if (network === 'testnet') {
-    return (
-      process.env.IOTA_TESTNET_RPC_URL ||
-      process.env.NEXT_PUBLIC_IOTA_TESTNET_RPC_URL ||
-      DEFAULT_RPC_URLS.testnet
-    );
-  }
-
-  return (
-    process.env.IOTA_MAINNET_RPC_URL ||
-    process.env.NEXT_PUBLIC_IOTA_MAINNET_RPC_URL ||
-    process.env.IOTA_RPC_URL ||
-    DEFAULT_RPC_URLS.mainnet
-  );
-}
-
-function getRpcKey(network: IotaNetwork): string {
-  if (network === 'testnet') {
-    return process.env.IOTA_TESTNET_RPC_KEY || process.env.IOTA_RPC_KEY || '';
-  }
-
-  return process.env.IOTA_MAINNET_RPC_KEY || process.env.IOTA_RPC_KEY || '';
-}
 
 export async function rpcCall<T>(
   network: IotaNetwork,

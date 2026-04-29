@@ -17,7 +17,7 @@ export type {
   Validator,
   ValidatorsData,
 } from '@/lib/iota/types';
-export { getRpcUrl } from '@/lib/iota/rpc-client';
+export { getRpcUrl } from '@/lib/iota/rpc-config';
 export {
   getValidatorByAddress,
   getValidatorsData,
