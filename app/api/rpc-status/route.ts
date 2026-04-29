@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { networkFromRequest, rateLimitResponse } from '@/lib/api-utils';
+import {
+  CACHE_HEADERS,
+  cachedJson,
+  networkFromRequest,
+  rateLimitResponse,
+} from '@/lib/api-utils';
 import { getRpcLatency } from '@/lib/iota';
 import { clientKey, createRateLimiter } from '@/lib/rate-limit';
 
@@ -17,11 +22,7 @@ export async function GET(request: Request) {
   try {
     const network = networkFromRequest(request);
     const data = await getRpcLatency(network);
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=45',
-      },
-    });
+    return cachedJson(data, CACHE_HEADERS.rpcStatus);
   } catch (error) {
     console.error('RPC status API error:', error);
     return NextResponse.json(

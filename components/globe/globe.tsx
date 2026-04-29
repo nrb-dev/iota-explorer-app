@@ -11,7 +11,6 @@ import { hasGeo } from './types';
 import { groupByRegion, groupByCountry } from './grouping';
 import { createRegionLabel, createCountryLabel } from './labels';
 import {
-  useValidators,
   useResponsiveDimensions,
   useZoomBand,
   useValidatorsKey,
@@ -30,6 +29,7 @@ const GlobeGl = dynamic(() => import('react-globe.gl'), {
 const MAX_GLOBE_HEIGHT = 800;
 const CLOSE_ENTER_ALTITUDE = 1.4;
 const CLOSE_LEAVE_ALTITUDE = 1.6;
+const EMPTY_VALIDATORS: Validator[] = [];
 
 const getLat = (d: LabelDatum) => d.lat;
 const getLng = (d: LabelDatum) => d.lng;
@@ -52,12 +52,14 @@ type GlobeProps = {
   className?: string;
   validators?: Validator[];
   isLoading?: boolean;
+  error?: Error | null;
 };
 
 export function Globe({
   className,
-  validators: propValidators,
-  isLoading: propIsLoading,
+  validators = EMPTY_VALIDATORS,
+  isLoading = false,
+  error = null,
 }: GlobeProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,11 +67,6 @@ export function Globe({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  // Use props if provided, otherwise fall back to internal fetching
-  const internal = useValidators();
-  const validators = propValidators ?? internal.validators;
-  const isLoading = propIsLoading ?? internal.isLoading;
-  const error = internal.error;
   const dimensions = useResponsiveDimensions(containerRef, MAX_GLOBE_HEIGHT);
   const { band: zoomBand, onZoom } = useZoomBand(
     CLOSE_ENTER_ALTITUDE,

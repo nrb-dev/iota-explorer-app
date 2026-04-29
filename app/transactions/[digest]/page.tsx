@@ -47,15 +47,6 @@ function formatDate(value: string | null): string {
   });
 }
 
-function formatIotaCompact(raw: string | null): string {
-  if (raw == null) return '—';
-  const n = Number(raw) / 1_000_000_000;
-  if (!Number.isFinite(n)) return '—';
-  if (Math.abs(n) >= 1_000_000) return `${n.toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `${n.toFixed(2)}K`;
-  return n.toFixed(3);
-}
-
 function statusVariant(
   status: string | null
 ): 'default' | 'secondary' | 'destructive' | 'outline' {

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { networkFromRequest, rateLimitResponse } from '@/lib/api-utils';
+import {
+  CACHE_HEADERS,
+  cachedJson,
+  networkFromRequest,
+  rateLimitResponse,
+} from '@/lib/api-utils';
 import { getEpochs } from '@/lib/iota';
 import { clientKey, createRateLimiter } from '@/lib/rate-limit';
 
@@ -15,14 +20,7 @@ export async function GET(request: Request) {
   try {
     const network = networkFromRequest(request);
     const data = await getEpochs(network, 30);
-    return NextResponse.json(
-      { network, epochs: data },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-        },
-      }
-    );
+    return cachedJson({ network, epochs: data }, CACHE_HEADERS.epochs);
   } catch (error) {
     console.error('Epochs API error:', error);
     return NextResponse.json(

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { networkFromRequest, rateLimitResponse } from '@/lib/api-utils';
+import {
+  CACHE_HEADERS,
+  cachedJson,
+  networkFromRequest,
+  rateLimitResponse,
+} from '@/lib/api-utils';
 import { getRecentTransactions } from '@/lib/iota';
 import { clientKey, createRateLimiter } from '@/lib/rate-limit';
 
@@ -15,13 +20,9 @@ export async function GET(request: Request) {
   try {
     const network = networkFromRequest(request);
     const data = await getRecentTransactions(network, 25);
-    return NextResponse.json(
+    return cachedJson(
       { network, transactions: data },
-      {
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      }
+      CACHE_HEADERS.transactions
     );
   } catch (error) {
     console.error('Transactions API error:', error);

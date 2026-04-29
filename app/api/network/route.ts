@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { networkFromRequest, rateLimitResponse } from '@/lib/api-utils';
+import {
+  CACHE_HEADERS,
+  cachedJson,
+  networkFromRequest,
+  rateLimitResponse,
+} from '@/lib/api-utils';
 import { getNetworkData } from '@/lib/iota';
 import { clientKey, createRateLimiter } from '@/lib/rate-limit';
 
@@ -17,11 +22,7 @@ export async function GET(request: Request) {
   try {
     const network = networkFromRequest(request);
     const data = await getNetworkData(network);
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      },
-    });
+    return cachedJson(data, CACHE_HEADERS.network);
   } catch (error) {
     console.error('Network API error:', error);
     return NextResponse.json(

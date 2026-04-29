@@ -9,7 +9,12 @@
  */
 import { NextResponse } from 'next/server';
 import { getValidatorsData } from '@/lib/iota';
-import { networkFromRequest, rateLimitResponse } from '@/lib/api-utils';
+import {
+  CACHE_HEADERS,
+  cachedJson,
+  networkFromRequest,
+  rateLimitResponse,
+} from '@/lib/api-utils';
 import { clientKey, createRateLimiter } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -26,14 +31,7 @@ export async function GET(request: Request) {
   try {
     const network = networkFromRequest(request);
     const data = await getValidatorsData(network);
-    return NextResponse.json(data, {
-      headers: {
-        // CDN holds for 60s, serves stale for 5 min while revalidating.
-        // Validator data is per-epoch (~24h), so a fresher TTL is overkill.
-        'Cache-Control':
-          'public, s-maxage=60, stale-while-revalidate=300',
-      },
-    });
+    return cachedJson(data, CACHE_HEADERS.validators);
   } catch (error) {
     console.error('Validator API error:', error);
     return NextResponse.json(
