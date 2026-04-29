@@ -6,18 +6,27 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from '@/components/ui/navigation-menu';
-import { MenuIcon } from 'lucide-react';
+import { Activity, BarChart3, Landmark, MenuIcon, Users } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { ThemeToggle } from './theme-toggle';
 import { NetworkControls } from './network-controls';
+import { GlobeControls } from './globe/globe-controls';
+
+const navItems = [
+  { href: '/', label: 'Home', icon: Activity },
+  { href: '/validators', label: 'Validators', icon: Users },
+  { href: '/charts', label: 'Charts', icon: BarChart3 },
+  { href: '/staking', label: 'Staking', icon: Landmark },
+];
 
 export function Navbar() {
   return (
@@ -37,22 +46,11 @@ export function Navbar() {
 
         <NavigationMenu className="bg-background rounded-sm p-1 hidden sm:flex">
           <NavigationMenuList>
-            <NavigationMenuItem>
-              <NavigationMenuLink render={<Link href="/">Home</Link>} />
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                render={<Link href="/validators">Validators</Link>}
-              />
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavigationMenuLink render={<Link href="/charts">Charts</Link>} />
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                render={<Link href="/staking">Staking</Link>}
-              />
-            </NavigationMenuItem>
+            {navItems.map(({ href, label }) => (
+              <NavigationMenuItem key={href}>
+                <NavigationMenuLink render={<Link href={href}>{label}</Link>} />
+              </NavigationMenuItem>
+            ))}
           </NavigationMenuList>
         </NavigationMenu>
 
@@ -70,36 +68,32 @@ export function Navbar() {
           >
             <MenuIcon />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-44 min-w-44">
+          <DropdownMenuContent className="w-56 min-w-56">
             <DropdownMenuGroup className="sm:hidden">
-              <DropdownMenuItem>
-                <Link href="/" className="flex items-center gap-2">
-                  Home
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/validators" className="flex items-center gap-2">
-                  Validators
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/charts" className="flex items-center gap-2">
-                  Charts
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/staking" className="flex items-center gap-2">
-                  Staking
-                </Link>
-              </DropdownMenuItem>
+              <DropdownMenuLabel className="px-2">Navigation</DropdownMenuLabel>
+              {navItems.map(({ href, label, icon: Icon }) => (
+                <DropdownMenuItem key={href} className="h-8 px-2">
+                  <Link href={href} className="flex min-w-0 items-center gap-2">
+                    <Icon className="size-4" />
+                    <span className="truncate">{label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="flex sm:hidden" />
 
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuLabel className="px-2">
+                Preferences
+              </DropdownMenuLabel>
+              <DropdownMenuItem className="p-0">
                 <ThemeToggle />
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <GlobeControls />
 
             <DropdownMenuSeparator />
 

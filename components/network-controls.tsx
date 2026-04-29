@@ -78,7 +78,7 @@ export function NetworkControls() {
   return (
     <>
       <DropdownMenuGroup>
-        <DropdownMenuLabel className="px-2">Network</DropdownMenuLabel>
+        <DropdownMenuLabel className="px-2">Data network</DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={network}
           onValueChange={handleNetworkChange}
@@ -101,6 +101,7 @@ export function NetworkControls() {
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
+        <DropdownMenuLabel className="px-2">Status</DropdownMenuLabel>
         <DropdownMenuItem
           className="h-8 cursor-default px-2"
           disabled
