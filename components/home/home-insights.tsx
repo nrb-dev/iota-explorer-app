@@ -1,18 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { Pause, Play } from 'lucide-react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  XAxis,
-  YAxis,
-} from 'recharts';
 
 import type {
   AddressMetrics,
@@ -25,12 +17,6 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -44,6 +30,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
 import { formatAddress } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+
+const TransactionBlocksChart = dynamic(
+  () =>
+    import('@/components/home/home-charts').then(
+      (mod) => mod.TransactionBlocksChart
+    ),
+  {
+    ssr: false,
+    loading: () => <ChartSkeleton className="h-[260px]" />,
+  }
+);
+
+const AddressesChart = dynamic(
+  () => import('@/components/home/home-charts').then((mod) => mod.AddressesChart),
+  {
+    ssr: false,
+    loading: () => <ChartSkeleton className="h-[180px]" />,
+  }
+);
 
 type NetworkApiResponse = {
   network: IotaNetwork;
@@ -223,6 +228,10 @@ function MetricBlock({
   );
 }
 
+function ChartSkeleton({ className }: { className: string }) {
+  return <Skeleton className={cn('w-full rounded-lg', className)} />;
+}
+
 export function HomeInsights({ className }: { className?: string }) {
   const router = useRouter();
   const network = useNetworkStore((state) => state.network);
@@ -312,14 +321,6 @@ export function HomeInsights({ className }: { className?: string }) {
   }, [epochStart, epochDuration, now]);
 
   const epochStartLabel = formatStartTime(epochStart);
-
-  const txChartConfig = {
-    transactions: { label: 'Transaction blocks', color: 'var(--primary)' },
-  } satisfies ChartConfig;
-
-  const addressChartConfig = {
-    cumulativeAddresses: { label: 'Total addresses', color: 'var(--primary)' },
-  } satisfies ChartConfig;
 
   const txRows = txData?.transactions ?? [];
   const epochRows = epochsData?.epochs ?? [];
@@ -422,42 +423,7 @@ export function HomeInsights({ className }: { className?: string }) {
                 value={formatBigCompact(lastEpochTransactions)}
               />
             </div>
-            <ChartContainer config={txChartConfig} className="h-[260px] w-full">
-              <AreaChart
-                data={transactionSeries}
-                margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
-              >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="epoch"
-                  tickLine={false}
-                  axisLine={false}
-                  minTickGap={20}
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                />
-                <YAxis hide />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent />}
-                  labelFormatter={(_, payload) =>
-                    payload?.[0]?.payload?.epochLabel
-                      ? `Epoch ${payload[0].payload.epochLabel}`
-                      : 'Epoch'
-                  }
-                  formatter={(value) => formatBigCompact(Number(value))}
-                />
-                <Area
-                  dataKey="transactions"
-                  type="monotone"
-                  stroke="var(--color-transactions)"
-                  fill="var(--color-transactions)"
-                  fillOpacity={0.18}
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ChartContainer>
+            <TransactionBlocksChart data={transactionSeries} />
           </CardContent>
         </Card>
 
@@ -485,44 +451,7 @@ export function HomeInsights({ className }: { className?: string }) {
                 )}
               />
             </div>
-            <ChartContainer
-              config={addressChartConfig}
-              className="h-[180px] w-full"
-            >
-              <LineChart
-                data={addressSeries}
-                margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
-              >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="epoch"
-                  tickLine={false}
-                  axisLine={false}
-                  minTickGap={20}
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                />
-                <YAxis hide />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent />}
-                  labelFormatter={(_, payload) =>
-                    payload?.[0]?.payload?.epochLabel
-                      ? `Epoch ${payload[0].payload.epochLabel}`
-                      : 'Epoch'
-                  }
-                  formatter={(value) => formatBigCompact(Number(value))}
-                />
-                <Line
-                  dataKey="cumulativeAddresses"
-                  type="monotone"
-                  stroke="var(--color-cumulativeAddresses)"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ChartContainer>
+            <AddressesChart data={addressSeries} />
           </CardContent>
         </Card>
       </div>

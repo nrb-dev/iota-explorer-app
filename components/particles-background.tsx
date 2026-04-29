@@ -1,34 +1,8 @@
 'use client';
 
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-
-interface MousePosition {
-  x: number;
-  y: number;
-}
-
-function useMousePosition(): MousePosition {
-  const [mousePosition, setMousePosition] = useState<MousePosition>({
-    x: 0,
-    y: 0,
-  });
-
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({ x: event.clientX, y: event.clientY });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
-
-  return mousePosition;
-}
 
 export interface ParticlesProps {
   className?: string;
@@ -76,7 +50,6 @@ export const Particles: React.FC<ParticlesProps> = ({
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const context = useRef<CanvasRenderingContext2D | null>(null);
   const circles = useRef<Circle[]>([]);
-  const mousePosition = useMousePosition();
   const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const animationRef = useRef<number | null>(null);
@@ -91,7 +64,21 @@ export const Particles: React.FC<ParticlesProps> = ({
     initCanvas();
     // eslint-disable-next-line react-hooks/immutability
     animate();
+    const onMouseMove = (event: MouseEvent) => {
+      if (!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const { w, h } = canvasSize.current;
+      const x = event.clientX - rect.left - w / 2;
+      const y = event.clientY - rect.top - h / 2;
+      const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;
+      if (inside) {
+        mouse.current.x = x;
+        mouse.current.y = y;
+      }
+    };
+
     window.addEventListener('resize', initCanvas);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
 
     // Pause animation when tab is hidden to save CPU/battery
     const onVisibilityChange = () => {
@@ -112,6 +99,7 @@ export const Particles: React.FC<ParticlesProps> = ({
 
     return () => {
       window.removeEventListener('resize', initCanvas);
+      window.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
@@ -121,12 +109,6 @@ export const Particles: React.FC<ParticlesProps> = ({
   }, [color]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/immutability
-    onMouseMove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mousePosition.x, mousePosition.y]);
-
-  useEffect(() => {
     initCanvas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
@@ -134,20 +116,6 @@ export const Particles: React.FC<ParticlesProps> = ({
   const initCanvas = () => {
     resizeCanvas();
     drawParticles();
-  };
-
-  const onMouseMove = () => {
-    if (canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const { w, h } = canvasSize.current;
-      const x = mousePosition.x - rect.left - w / 2;
-      const y = mousePosition.y - rect.top - h / 2;
-      const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;
-      if (inside) {
-        mouse.current.x = x;
-        mouse.current.y = y;
-      }
-    }
   };
 
   interface Circle {

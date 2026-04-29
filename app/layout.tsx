@@ -4,7 +4,7 @@ import './globals.css';
 
 import { Navbar } from '@/components/navbar';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Particles } from '@/components/particles-background';
+import { AppBackground } from '@/components/app-background';
 import { Footer } from '@/components/footer';
 
 const geistSans = Geist({
@@ -40,7 +40,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Particles color="#b325d6" className="z-0 pointer-events-none" />
+          <AppBackground />
           <Navbar />
           <div className="relative z-10 flex flex-1 flex-col">
             {children}
