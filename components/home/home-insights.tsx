@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -82,6 +82,9 @@ type TransactionsApiResponse = {
 };
 
 const IOTA_DECIMALS = 9;
+const NETWORK_REFRESH_MS = 30_000;
+const EPOCHS_REFRESH_MS = 300_000;
+const TRANSACTIONS_REFRESH_MS = 6_000;
 
 function formatIotaCompact(raw: string | null): string {
   if (raw == null) return '—';
@@ -228,11 +231,54 @@ function ChartSkeleton({ className }: { className: string }) {
   return <Skeleton className={cn('w-full rounded-lg', className)} />;
 }
 
+function useSectionVisibility<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
+      {
+        root: null,
+        rootMargin: '240px 0px',
+        threshold: 0.05,
+      }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+}
+
+function usePageVisibility() {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const sync = () => setIsVisible(document.visibilityState === 'visible');
+    sync();
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, []);
+
+  return isVisible;
+}
+
 export function HomeInsights({ className }: { className?: string }) {
   const router = useRouter();
   const network = useNetworkStore((state) => state.network);
   const [paused, setPaused] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const { ref: sectionRef, isVisible: sectionVisible } =
+    useSectionVisibility<HTMLElement>();
+  const { ref: transactionsRef, isVisible: transactionsVisible } =
+    useSectionVisibility<HTMLDivElement>();
+  const pageVisible = usePageVisibility();
+  const sectionPolling = sectionVisible && pageVisible;
+  const livePolling = !paused && transactionsVisible && pageVisible;
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 5_000);
@@ -243,8 +289,10 @@ export function HomeInsights({ className }: { className?: string }) {
     withNetworkParam('/api/network', network),
     jsonFetcher,
     {
-      refreshInterval: 30_000,
+      refreshInterval: sectionPolling ? NETWORK_REFRESH_MS : 0,
       keepPreviousData: true,
+      revalidateOnFocus: sectionPolling,
+      isPaused: () => !sectionPolling,
       shouldRetryOnError: false,
     }
   );
@@ -253,8 +301,10 @@ export function HomeInsights({ className }: { className?: string }) {
     withNetworkParam('/api/epochs', network),
     jsonFetcher,
     {
-      refreshInterval: 300_000,
+      refreshInterval: sectionPolling ? EPOCHS_REFRESH_MS : 0,
       keepPreviousData: true,
+      revalidateOnFocus: sectionPolling,
+      isPaused: () => !sectionPolling,
       shouldRetryOnError: false,
     }
   );
@@ -263,8 +313,10 @@ export function HomeInsights({ className }: { className?: string }) {
     withNetworkParam('/api/transactions', network),
     jsonFetcher,
     {
-      refreshInterval: paused ? 0 : 6_000,
+      refreshInterval: livePolling ? TRANSACTIONS_REFRESH_MS : 0,
       keepPreviousData: true,
+      revalidateOnFocus: livePolling,
+      isPaused: () => !livePolling,
       shouldRetryOnError: false,
     }
   );
@@ -333,6 +385,7 @@ export function HomeInsights({ className }: { className?: string }) {
 
   return (
     <section
+      ref={sectionRef}
       className={cn('relative mx-auto w-full max-w-7xl px-4 pb-8', className)}
     >
       <div className="grid gap-4 lg:grid-cols-3">
@@ -462,7 +515,10 @@ export function HomeInsights({ className }: { className?: string }) {
 
         {/* ── Transactions ── */}
         <TabsContent value="transactions">
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+          <Card
+            ref={transactionsRef}
+            className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden"
+          >
             <CardHeader className="pb-3">
               <div className="flex flex-row items-center w-full justify-between">
                 <CardTitle className="text-base font-semibold">
