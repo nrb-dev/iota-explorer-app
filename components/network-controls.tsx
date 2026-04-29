@@ -12,6 +12,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { jsonFetcher } from '@/lib/client-fetcher';
 import {
   IOTA_NETWORK_LABELS,
   IOTA_NETWORKS,
@@ -24,11 +25,9 @@ type RpcStatus = {
   latencyMs: number;
 };
 
-const fetcher = async (url: string): Promise<RpcStatus> => {
+const rpcStatusFetcher = async (url: string): Promise<RpcStatus> => {
   const startedAt = performance.now();
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = (await res.json()) as RpcStatus;
+  const data = await jsonFetcher<RpcStatus>(url);
   return {
     ...data,
     latencyMs: data.latencyMs || Math.round(performance.now() - startedAt),
@@ -43,7 +42,7 @@ export function NetworkControls() {
 
   const { data, error, isLoading } = useSWR<RpcStatus, Error>(
     withNetworkParam('/api/rpc-status', network),
-    fetcher,
+    rpcStatusFetcher,
     {
       refreshInterval: 30_000,
       revalidateOnFocus: true,

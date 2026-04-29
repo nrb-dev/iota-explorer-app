@@ -10,6 +10,7 @@ import type {
   ValidatorApiResponse,
   ZoomBand,
 } from './types';
+import { jsonFetcher } from '@/lib/client-fetcher';
 import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
 
 /**
@@ -21,20 +22,12 @@ const REFRESH_INTERVAL_MS = 5 * 60_000;
 
 const EMPTY: Validator[] = [];
 
-const fetcher = async (url: string): Promise<ValidatorApiResponse> => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
-};
-
 /* ── Fetch + auto-refresh validators ── */
 export function useValidators() {
   const network = useNetworkStore((state) => state.network);
   const { data, error, isLoading } = useSWR<ValidatorApiResponse, Error>(
     withNetworkParam('/api/validators', network),
-    fetcher,
+    jsonFetcher,
     {
       refreshInterval: REFRESH_INTERVAL_MS,
       revalidateOnFocus: true,

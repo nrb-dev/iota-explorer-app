@@ -13,7 +13,7 @@ import type {
   IotaNetwork,
   NetworkMetrics,
   TransactionSummary,
-} from '@/lib/iota';
+} from '@/lib/iota/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { jsonFetcher } from '@/lib/client-fetcher';
 import { useNetworkStore, withNetworkParam } from '@/lib/network-store';
 import { formatAddress } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -81,11 +82,6 @@ type TransactionsApiResponse = {
 };
 
 const IOTA_DECIMALS = 9;
-const fetcher = async <T,>(url: string): Promise<T> => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json() as Promise<T>;
-};
 
 function formatIotaCompact(raw: string | null): string {
   if (raw == null) return '—';
@@ -245,7 +241,7 @@ export function HomeInsights({ className }: { className?: string }) {
 
   const { data: networkData } = useSWR<NetworkApiResponse, Error>(
     withNetworkParam('/api/network', network),
-    fetcher,
+    jsonFetcher,
     {
       refreshInterval: 30_000,
       keepPreviousData: true,
@@ -255,7 +251,7 @@ export function HomeInsights({ className }: { className?: string }) {
 
   const { data: epochsData } = useSWR<EpochsApiResponse, Error>(
     withNetworkParam('/api/epochs', network),
-    fetcher,
+    jsonFetcher,
     {
       refreshInterval: 300_000,
       keepPreviousData: true,
@@ -265,7 +261,7 @@ export function HomeInsights({ className }: { className?: string }) {
 
   const { data: txData } = useSWR<TransactionsApiResponse, Error>(
     withNetworkParam('/api/transactions', network),
-    fetcher,
+    jsonFetcher,
     {
       refreshInterval: paused ? 0 : 6_000,
       keepPreviousData: true,

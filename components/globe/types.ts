@@ -1,55 +1,16 @@
 import type { IotaNetwork } from '@/lib/iota-network';
+import type {
+  Validator,
+  ValidatorsData,
+} from '@/lib/iota/types';
 
 export type { IotaNetwork };
-
-export type Validator = {
-  name: string;
-  description: string;
-  imageUrl: string;
-  projectUrl: string;
-  region: string;
-  country: string;
-  city: string;
-  /** null when DNS or geo lookup fails — these validators are still in the table but skipped on the globe. */
-  lat: number | null;
-  lng: number | null;
-  votingPower: number;
-  commissionRate: number;
-  stakingPoolIotaBalance: string;
-  nextEpochStake: string;
-  gasPrice: string;
-  rewardsPool: string;
-  nextEpochGasPrice: string;
-  nextEpochCommissionRate: number | null;
-  stakingPoolId: string | null;
-  stakingPoolActivationEpoch: string | null;
-  poolTokenBalance: string;
-  pendingStake: string;
-  pendingTotalIotaWithdraw: string;
-  pendingPoolTokenWithdraw: string;
-  operationCapId: string | null;
-  protocolPubkey: string | null;
-  networkPubkey: string | null;
-  workerPubkey: string | null;
-  proofOfPossession: string | null;
-  iotaAddress: string;
-  netAddress: string | null;
-  p2pAddress: string | null;
-  primaryAddress: string | null;
-  workerAddress: string | null;
-  apy: number | null;
-};
+export type { Validator };
 
 /** Validator narrowed to the one usable by the 3D globe (geo present). */
 export type GeoValidator = Validator & { lat: number; lng: number };
 
-export type ValidatorApiResponse = {
-  network: IotaNetwork;
-  epoch: string;
-  totalStake: string;
-  referenceGasPrice: string;
-  validators: Validator[];
-};
+export type ValidatorApiResponse = ValidatorsData;
 
 export type LabelDatum = {
   id: string;
